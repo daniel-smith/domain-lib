@@ -9,6 +9,7 @@ namespace Shopping.Domain.Events
             Id = id;
         }
 
+        public string EventName { get; } = "ShoppingCartCreated";
         public Guid Id { get; }
     }
 }

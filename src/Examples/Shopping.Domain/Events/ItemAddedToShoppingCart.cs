@@ -10,6 +10,7 @@ namespace Shopping.Domain.Events
             Item = item;
         }
 
+        public string EventName { get; } = "ItemAddedToShoppingCart";
         public Guid Id { get; }
         public string Item { get; }
     }
