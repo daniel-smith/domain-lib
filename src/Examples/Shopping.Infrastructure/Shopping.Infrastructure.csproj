@@ -10,8 +10,4 @@
     <ProjectReference Include="..\Shopping.Domain\Shopping.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="JsonSerialization\" />
-  </ItemGroup>
-
 </Project>

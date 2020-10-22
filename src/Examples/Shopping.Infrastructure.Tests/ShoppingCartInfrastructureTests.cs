@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using DomainLib.Aggregates;
+using DomainLib.Persistence;
 using DomainLib.Persistence.EventStore;
 using DomainLib.Serialization;
 using EventStore.ClientAPI;
@@ -8,6 +10,7 @@ using NUnit.Framework;
 using Shopping.Domain.Aggregates;
 using Shopping.Domain.Commands;
 using Shopping.Domain.Events;
+using Shopping.Infrastructure.JsonSerialization;
 
 namespace Shopping.Infrastructure.Tests
 {
@@ -32,18 +35,35 @@ namespace Shopping.Infrastructure.Tests
 
             var eventsToPersist = result1.AppliedEvents.Concat(result2.AppliedEvents).ToList();
 
-            var serializer = new JsonEventSerializer();
-            serializer.RegisterEventTypeMappings(initialState.EventTypeMapping);
+            var serializer = CreateJsonSerializer(initialState.EventTypeMapping);
             var repository = new EventStoreEventsRepository(EventStoreConnection, serializer);
 
             var streamName = $"shoppingCart-{result2.NewState.Id.Value}";
 
             var nextEventVersion = await repository.SaveEventsAsync(streamName, ExpectedVersion.NoStream, eventsToPersist);
-
             var expectedNextEventVersion = eventsToPersist.Count - 1;
+
             Assert.That(nextEventVersion, Is.EqualTo(expectedNextEventVersion));
 
-            var eventsFromPersistence = await repository.LoadEventsAsync<object>(streamName);
+            var eventsFromPersistence = (await repository.LoadEventsAsync<IDomainEvent>(streamName));
+            var loadedAggregate = ShoppingCart.FromEvents(eventsFromPersistence);
+
+            // Check the loaded aggregate root state.
+            Assert.That(loadedAggregate.Id, Is.EqualTo(shoppingCartId));
+            Assert.That(loadedAggregate.Items, Has.Count.EqualTo(2));
+            Assert.That(loadedAggregate.Items[0], Is.EqualTo("First Item"));
+            Assert.That(loadedAggregate.Items[1], Is.EqualTo("Second Item"));
+        }
+
+        private static IEventSerializer CreateJsonSerializer(IEventTypeMapping eventTypeMapping)
+        {
+            var serializer = new JsonEventSerializer();
+            serializer.RegisterConverter(new ShoppingCartCreatedConverter());
+            serializer.RegisterConverter(new ItemAddedToShoppingCartConverter());
+
+            serializer.RegisterEventTypeMappings(eventTypeMapping);
+
+            return serializer;
         }
 
     }
