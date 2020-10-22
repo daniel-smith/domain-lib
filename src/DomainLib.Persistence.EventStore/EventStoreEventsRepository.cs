@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 using DomainLib.Aggregates;
 using EventStore.ClientAPI;
@@ -57,12 +58,8 @@ namespace DomainLib.Persistence.EventStore
             }
 
             var events = eventsSlice.Events;
-            
-            return events.Select(e =>
-            {
-                e.OriginalEvent.
-            })
 
+            return events.Select(e => _serializer.DeserializeEvent<TEvent>(e.OriginalEvent.Data, e.OriginalEvent.EventType));
         }
     }
 }

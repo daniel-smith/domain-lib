@@ -33,6 +33,7 @@ namespace Shopping.Infrastructure.Tests
             var eventsToPersist = result1.AppliedEvents.Concat(result2.AppliedEvents).ToList();
 
             var serializer = new JsonEventSerializer();
+            serializer.RegisterEventTypeMappings(initialState.EventTypeMapping);
             var repository = new EventStoreEventsRepository(EventStoreConnection, serializer);
 
             var streamName = $"shoppingCart-{result2.NewState.Id.Value}";
@@ -42,7 +43,7 @@ namespace Shopping.Infrastructure.Tests
             var expectedNextEventVersion = eventsToPersist.Count - 1;
             Assert.That(nextEventVersion, Is.EqualTo(expectedNextEventVersion));
 
-            var eventsFromPersistence = await repository.LoadEventsAsync<IDomainEvent>(streamName);
+            var eventsFromPersistence = await repository.LoadEventsAsync<object>(streamName);
         }
 
     }
