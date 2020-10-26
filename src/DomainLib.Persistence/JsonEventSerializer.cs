@@ -35,24 +35,15 @@ namespace DomainLib.Serialization
             _eventNameMappings.Merge(nameMapping);
         }
 
-        public Type GetClrTypeForEventName(string eventName)
+        public IEventPersistenceData GetPersistenceData(object @event)
         {
-            return _eventNameMappings.GetClrTypeForEventName(eventName);
-        }
-
-        public string GetEventNameForClrType(Type clrType)
-        {
-            return _eventNameMappings.GetEventNameForClrType(clrType);
-        }
-
-        public IEventPersistenceData GetPersistenceData(object @event, string eventName)
-        {
+            var eventName = _eventNameMappings.GetEventNameForClrType(@event.GetType());
             return new JsonEventPersistenceData(Guid.NewGuid(), eventName, JsonSerializer.SerializeToUtf8Bytes(@event, _options), null);
         }
 
         public TEvent DeserializeEvent<TEvent>(byte[] eventData, string eventName)
         {
-            var clrType = GetClrTypeForEventName(eventName);
+            var clrType = _eventNameMappings.GetClrTypeForEventName(eventName);
 
             var evt = JsonSerializer.Deserialize(eventData, clrType, _options);
 

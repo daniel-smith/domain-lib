@@ -3,7 +3,7 @@ using DomainLib.Persistence;
 
 namespace DomainLib.Serialization
 {
-    public struct JsonEventPersistenceData : IEventPersistenceData
+    public readonly struct JsonEventPersistenceData : IEventPersistenceData
     {
         public JsonEventPersistenceData(Guid eventId, string eventName, byte[] eventData, byte[] eventMetadata) : this()
         {

@@ -20,11 +20,7 @@ namespace DomainLib.Persistence.EventStore
 
         public async Task<long> SaveEventsAsync<TEvent>(string streamName, long expectedStreamVersion, IEnumerable<TEvent> events)
         {
-            var eventDatas = events.Select(e =>
-            {
-                var eventName = _serializer.GetEventNameForClrType(e.GetType());
-                return _serializer.ToEventData(e, eventName);
-            });
+            var eventDatas = events.Select(e => _serializer.ToEventData(e));
             
             // TODO: Handle failure cases
             var writeResult = await _connection.AppendToStreamAsync(streamName, expectedStreamVersion, eventDatas);
