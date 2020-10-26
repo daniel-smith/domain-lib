@@ -15,13 +15,13 @@ namespace DomainLib.Aggregates
         private readonly IReadOnlyDictionary<Type, ApplyEvent<TAggregateRoot, TDomainEventBase>> _routes;
 
         public ApplyEventRouter(IEnumerable<KeyValuePair<Type, ApplyEvent<TAggregateRoot, TDomainEventBase>>> routes, 
-                                IEnumerable<KeyValuePair<string, Type>> eventTypeMappings)
+                                IEventNameMapping eventNameMappings)
         {
             _routes = ImmutableDictionary.CreateRange(routes);
-            EventTypeMapping = new EventTypeMapping(eventTypeMappings);
+            EventNameMappings = eventNameMappings;
         }
 
-        public IEventTypeMapping EventTypeMapping { get; }
+        public IEventNameMapping EventNameMappings { get; }
 
         public TAggregateRoot Route(TAggregateRoot aggregateRoot, TDomainEventBase @event)
         {

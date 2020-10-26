@@ -1,11 +1,9 @@
-﻿using System;
+﻿using EventStore.ClientAPI;
+using EventStore.ClientAPI.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Threading.Tasks;
-using DomainLib.Aggregates;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
 
 namespace DomainLib.Persistence.EventStore
 {
@@ -24,12 +22,7 @@ namespace DomainLib.Persistence.EventStore
         {
             var eventDatas = events.Select(e =>
             {
-                var eventName = e switch
-                {
-                    INamedEvent ne => ne.EventName,
-                    _ => e.GetType().Name
-                };
-
+                var eventName = _serializer.GetEventNameForClrType(e.GetType());
                 return _serializer.ToEventData(e, eventName);
             });
             

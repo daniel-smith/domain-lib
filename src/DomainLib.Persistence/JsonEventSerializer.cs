@@ -1,16 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using DomainLib.Aggregates;
+using DomainLib.Persistence;
+using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using DomainLib.Aggregates;
-using DomainLib.Persistence;
 
 namespace DomainLib.Serialization
 {
     public class JsonEventSerializer : IEventSerializer
     {
         private readonly JsonSerializerOptions _options;
-        private readonly IEventTypeMapping _eventTypeMappings = new EventTypeMapping();
+        private readonly IEventNameMapping _eventNameMappings = new EventNameMapping();
 
         public JsonEventSerializer()
         {
@@ -31,9 +30,19 @@ namespace DomainLib.Serialization
             _options.Converters.Add(customConverter);
         }
 
-        public void RegisterEventTypeMappings(IEventTypeMapping typeMapping)
+        public void RegisterEventTypeMappings(IEventNameMapping nameMapping)
         {
-            _eventTypeMappings.Merge(typeMapping);
+            _eventNameMappings.Merge(nameMapping);
+        }
+
+        public Type GetClrTypeForEventName(string eventName)
+        {
+            return _eventNameMappings.GetClrTypeForEventName(eventName);
+        }
+
+        public string GetEventNameForClrType(Type clrType)
+        {
+            return _eventNameMappings.GetEventNameForClrType(clrType);
         }
 
         public IEventPersistenceData GetPersistenceData(object @event, string eventName)
@@ -43,7 +52,7 @@ namespace DomainLib.Serialization
 
         public TEvent DeserializeEvent<TEvent>(byte[] eventData, string eventName)
         {
-            var clrType = _eventTypeMappings.GetClrTypeForEvent(eventName);
+            var clrType = GetClrTypeForEventName(eventName);
 
             var evt = JsonSerializer.Deserialize(eventData, clrType, _options);
 
