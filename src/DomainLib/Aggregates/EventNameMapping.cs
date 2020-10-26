@@ -19,13 +19,13 @@ namespace DomainLib.Aggregates
         
         public void RegisterEvent<TEvent>(bool throwOnConflict = true)
         {
-            RegisterEvent(typeof(TEvent));
+            RegisterEvent(typeof(TEvent), throwOnConflict);
         }
 
         public void RegisterEvent(Type clrType, bool throwOnConflict = true)
         {
             var eventName = DetermineEventNameForClrType(clrType);
-            RegisterEventName(eventName, clrType);
+            RegisterEventName(eventName, clrType, throwOnConflict);
         }
 
         public Type GetClrTypeForEventName(string eventName)
