@@ -6,38 +6,41 @@ namespace DomainLib.Serialization
     [Serializable]
     public class InvalidEventTypeException : Exception
     {
-        private readonly string _serializedEventType;
-        private readonly Type _runtTimeType;
+        public string SerializedEventType { get; }
+        public string ClrTypeName { get; }
 
-        //
-        // For guidelines regarding the creation of new exception types, see
-        //    http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpgenref/html/cpconerrorraisinghandlingguidelines.asp
-        // and
-        //    http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dncscol/html/csharp07192001.asp
-        //
-
-        public InvalidEventTypeException(string serializedEventType, Type runtTimeType)
+        public InvalidEventTypeException(string serializedEventType, string clrTypeName)
         {
-            _serializedEventType = serializedEventType;
-            _runtTimeType = runtTimeType;
+            SerializedEventType = serializedEventType;
+            ClrTypeName = clrTypeName;
         }
 
-        public InvalidEventTypeException(string message, string serializedEventType, Type runtTimeType) : base(message)
+        public InvalidEventTypeException(string message, string serializedEventType, string clrTypeName) 
+            : base(message)
         {
-            _serializedEventType = serializedEventType;
-            _runtTimeType = runtTimeType;
+            SerializedEventType = serializedEventType;
+            ClrTypeName = clrTypeName;
         }
 
-        public InvalidEventTypeException(string message, string serializedEventType, Type runtTimeType, Exception inner) : base(message, inner)
+        public InvalidEventTypeException(string message, string serializedEventType, string clrTypeName, Exception inner) 
+            : base(message, inner)
         {
-            _serializedEventType = serializedEventType;
-            _runtTimeType = runtTimeType;
+            SerializedEventType = serializedEventType;
+            ClrTypeName = clrTypeName;
         }
 
-        protected InvalidEventTypeException(
-            SerializationInfo info,
-            StreamingContext context) : base(info, context)
+        protected InvalidEventTypeException(SerializationInfo info, StreamingContext context) 
+            : base(info, context)
         {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            info.AddValue(nameof(ClrTypeName), ClrTypeName);
+            info.AddValue(nameof(SerializedEventType), SerializedEventType);
+
+            base.GetObjectData(info, context);
         }
     }
 }

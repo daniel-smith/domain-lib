@@ -53,7 +53,7 @@ namespace DomainLib.Serialization
             }
 
             var runtTimeType = typeof(TEvent);
-            throw new InvalidEventTypeException($"Cannot cast event of type {eventName} to {runtTimeType}", eventName, runtTimeType);
+            throw new InvalidEventTypeException($"Cannot cast event of type {eventName} to {runtTimeType.FullName}", eventName, runtTimeType.FullName);
         }
     }
 }

@@ -27,6 +27,14 @@ namespace DomainLib.Aggregates
             SerializationInfo info,
             StreamingContext context) : base(info, context)
         {
+            if (info == null)
+            {
+                throw new ArgumentNullException(nameof(info));
+            }
+
+            info.AddValue(nameof(EventName), EventName);
+
+            base.GetObjectData(info, context);
         }
     }
 }
