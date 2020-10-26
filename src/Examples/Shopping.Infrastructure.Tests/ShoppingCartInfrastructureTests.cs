@@ -10,7 +10,6 @@ using NUnit.Framework;
 using Shopping.Domain.Aggregates;
 using Shopping.Domain.Commands;
 using Shopping.Domain.Events;
-using Shopping.Infrastructure.JsonSerialization;
 
 namespace Shopping.Infrastructure.Tests
 {
@@ -58,8 +57,6 @@ namespace Shopping.Infrastructure.Tests
         private static IEventSerializer CreateJsonSerializer(IEventTypeMapping eventTypeMapping)
         {
             var serializer = new JsonEventSerializer();
-            serializer.RegisterConverter(new ShoppingCartCreatedConverter());
-            serializer.RegisterConverter(new ItemAddedToShoppingCartConverter());
 
             serializer.RegisterEventTypeMappings(eventTypeMapping);
 
