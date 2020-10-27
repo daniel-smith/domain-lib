@@ -9,7 +9,7 @@ namespace DomainLib.Serialization
     public class JsonEventSerializer : IEventSerializer
     {
         private readonly JsonSerializerOptions _options;
-        private readonly IEventNameMapping _eventNameMappings = new EventNameMapping();
+        private readonly IEventNameMap _eventNameMap = new EventNameMap();
 
         public JsonEventSerializer()
         {
@@ -30,20 +30,20 @@ namespace DomainLib.Serialization
             _options.Converters.Add(customConverter);
         }
 
-        public void RegisterEventTypeMappings(IEventNameMapping nameMapping)
+        public void RegisterEventTypeMappings(IEventNameMap eventNameMap)
         {
-            _eventNameMappings.Merge(nameMapping);
+            _eventNameMap.Merge(eventNameMap);
         }
 
         public IEventPersistenceData GetPersistenceData(object @event)
         {
-            var eventName = _eventNameMappings.GetEventNameForClrType(@event.GetType());
+            var eventName = _eventNameMap.GetEventNameForClrType(@event.GetType());
             return new JsonEventPersistenceData(Guid.NewGuid(), eventName, JsonSerializer.SerializeToUtf8Bytes(@event, _options), null);
         }
 
         public TEvent DeserializeEvent<TEvent>(byte[] eventData, string eventName)
         {
-            var clrType = _eventNameMappings.GetClrTypeForEventName(eventName);
+            var clrType = _eventNameMap.GetClrTypeForEventName(eventName);
 
             var evt = JsonSerializer.Deserialize(eventData, clrType, _options);
 

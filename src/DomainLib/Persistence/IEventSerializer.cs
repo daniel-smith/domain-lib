@@ -6,6 +6,6 @@ namespace DomainLib.Persistence
     {
         IEventPersistenceData GetPersistenceData(object @event);
         TEvent DeserializeEvent<TEvent>(byte[] eventData, string eventName);
-        void RegisterEventTypeMappings(IEventNameMapping nameMapping);
+        void RegisterEventTypeMappings(IEventNameMap eventNameMap);
     }
 }

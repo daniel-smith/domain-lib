@@ -6,15 +6,15 @@ using System.Linq;
 namespace DomainLib.Aggregates
 {
     // ReSharper disable once InconsistentNaming
-    public class EventNameMapping : IEventNameMapping
+    public class EventNameMap : IEventNameMap
     {
-        private readonly Dictionary<string, Type> _eventNameToTypeMappings;
-        private readonly Dictionary<Type, string> _eventTypeToNameMappings;
+        private readonly Dictionary<string, Type> _eventNameToTypeMap;
+        private readonly Dictionary<Type, string> _eventTypeToNameMap;
 
-        public EventNameMapping()
+        public EventNameMap()
         {
-            _eventNameToTypeMappings = new Dictionary<string, Type>();
-            _eventTypeToNameMappings = new Dictionary<Type, string>();
+            _eventNameToTypeMap = new Dictionary<string, Type>();
+            _eventTypeToNameMap = new Dictionary<Type, string>();
         }
         
         public void RegisterEvent<TEvent>(bool throwOnConflict = true)
@@ -30,7 +30,7 @@ namespace DomainLib.Aggregates
 
         public Type GetClrTypeForEventName(string eventName)
         {
-            if (_eventNameToTypeMappings.TryGetValue(eventName, out var clrType))
+            if (_eventNameToTypeMap.TryGetValue(eventName, out var clrType))
             {
                 return clrType;
             }
@@ -40,17 +40,17 @@ namespace DomainLib.Aggregates
 
         public string GetEventNameForClrType(Type clrType)
         {
-            return _eventTypeToNameMappings.TryGetValue(clrType, out var eventName)
+            return _eventTypeToNameMap.TryGetValue(clrType, out var eventName)
                 ? eventName
                 : DetermineEventNameForClrType(clrType);
         }
 
-        IEnumerable<KeyValuePair<string, Type>> IEventNameMapping.GetNameToTypeMappings()
+        IEnumerable<KeyValuePair<string, Type>> IEventNameMap.GetNameToTypeMappings()
         {
-            return _eventNameToTypeMappings.ToImmutableDictionary();
+            return _eventNameToTypeMap.ToImmutableDictionary();
         }
 
-        public void Merge(IEventNameMapping other, bool throwOnConflict = true)
+        public void Merge(IEventNameMap other, bool throwOnConflict = true)
         {
             foreach (var (key, value) in other.GetNameToTypeMappings())
             {
@@ -90,25 +90,25 @@ namespace DomainLib.Aggregates
         private void RegisterEventName(string eventName, Type clrType, bool throwOnConflict = true)
         {
             if (throwOnConflict && 
-                _eventNameToTypeMappings.ContainsKey(eventName) &&
-                _eventNameToTypeMappings[eventName] != clrType)
+                _eventNameToTypeMap.ContainsKey(eventName) &&
+                _eventNameToTypeMap[eventName] != clrType)
             {
                 throw new InvalidOperationException($"Event {eventName} is already mapped " +
-                                                    $"to type {_eventNameToTypeMappings[eventName].FullName}. " +
+                                                    $"to type {_eventNameToTypeMap[eventName].FullName}. " +
                                                     $"Cannot map to {clrType.FullName}");
             }
 
             if (throwOnConflict && 
-                _eventTypeToNameMappings.ContainsKey(clrType) &&
-                _eventTypeToNameMappings[clrType] != eventName)
+                _eventTypeToNameMap.ContainsKey(clrType) &&
+                _eventTypeToNameMap[clrType] != eventName)
             {
                 throw new InvalidOperationException($"Type {clrType.FullName} is already mapped " +
-                                                    $"to event {_eventTypeToNameMappings[clrType]}. " +
-                                                    $"Cannot map to {_eventTypeToNameMappings[clrType]}");
+                                                    $"to event {_eventTypeToNameMap[clrType]}. " +
+                                                    $"Cannot map to {_eventTypeToNameMap[clrType]}");
             }
 
-            _eventNameToTypeMappings[eventName] = clrType;
-            _eventTypeToNameMappings[clrType] = eventName;
+            _eventNameToTypeMap[eventName] = clrType;
+            _eventTypeToNameMap[clrType] = eventName;
         }
     }
 }

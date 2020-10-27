@@ -34,7 +34,7 @@ namespace Shopping.Infrastructure.Tests
 
             var eventsToPersist = result1.AppliedEvents.Concat(result2.AppliedEvents).ToList();
 
-            var serializer = CreateJsonSerializer(initialState.EventNameMappings);
+            var serializer = CreateJsonSerializer(initialState.EventNameMap);
             var repository = new EventStoreEventsRepository(EventStoreConnection, serializer);
 
             var streamName = $"shoppingCart-{result2.NewState.Id.Value}";
@@ -54,11 +54,11 @@ namespace Shopping.Infrastructure.Tests
             Assert.That(loadedAggregate.Items[1], Is.EqualTo("Second Item"));
         }
 
-        private static IEventSerializer CreateJsonSerializer(IEventNameMapping eventNameMapping)
+        private static IEventSerializer CreateJsonSerializer(IEventNameMap eventNameMap)
         {
             var serializer = new JsonEventSerializer();
 
-            serializer.RegisterEventTypeMappings(eventNameMapping);
+            serializer.RegisterEventTypeMappings(eventNameMap);
 
             return serializer;
         }

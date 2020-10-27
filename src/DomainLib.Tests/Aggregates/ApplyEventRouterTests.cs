@@ -92,10 +92,10 @@ namespace DomainLib.Tests.Aggregates
 
             var router = builder.Build();
 
-            Assert.That(router.EventNameMappings.GetEventNameForClrType(typeof(SomethingHappened)),
+            Assert.That(router.EventNameMap.GetEventNameForClrType(typeof(SomethingHappened)),
                 Is.EqualTo(EventNames.SomethingHappened));
 
-            Assert.That(router.EventNameMappings.GetEventNameForClrType(typeof(SomethingElseHappened)),
+            Assert.That(router.EventNameMap.GetEventNameForClrType(typeof(SomethingElseHappened)),
                         Is.EqualTo(EventNames.SomethingElseHappened));
         }
 

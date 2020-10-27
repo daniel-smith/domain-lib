@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace DomainLib.Tests.Aggregates
 {
     [TestFixture]
-    public class EventNameMappingTests
+    public class EventNameMapTests
     {
         public const string AttributeEventName = "AttributeEventName";
         public const string DerivedAttributeEventName = "DerviedAttributeEventName";
@@ -52,83 +52,83 @@ namespace DomainLib.Tests.Aggregates
         {
             Assert.Throws<InvalidOperationException>(() =>
             {
-                var eventNameMapping = new EventNameMapping();
-                eventNameMapping.RegisterEvent<OnlyAttributeEvent>();
-                eventNameMapping.RegisterEvent<OnlyAttributeEvent2>();
+                var eventNameMap = new EventNameMap();
+                eventNameMap.RegisterEvent<OnlyAttributeEvent>();
+                eventNameMap.RegisterEvent<OnlyAttributeEvent2>();
             });
         }
 
         [Test]
         public void CanOverrideEventRegistrationIfUserChoosesNotToThrow()
         {
-            var eventNameMapping = new EventNameMapping();
-            eventNameMapping.RegisterEvent<OnlyAttributeEvent>();
-            eventNameMapping.RegisterEvent<OnlyAttributeEvent2>(throwOnConflict: false);
+            var eventNameMap = new EventNameMap();
+            eventNameMap.RegisterEvent<OnlyAttributeEvent>();
+            eventNameMap.RegisterEvent<OnlyAttributeEvent2>(throwOnConflict: false);
 
-            Assert.That(eventNameMapping.GetClrTypeForEventName(AttributeEventName),
+            Assert.That(eventNameMap.GetClrTypeForEventName(AttributeEventName),
                         Is.EqualTo(typeof(OnlyAttributeEvent2)));
         }
 
         [Test]
-        public void CanMergeEventNameMappings()
+        public void CanMergeEventNameMaps()
         {
-            var eventNameMapping1 = new EventNameMapping();
-            var eventNameMapping2 = new EventNameMapping();
+            var eventNameMap1 = new EventNameMap();
+            var eventNameMap2 = new EventNameMap();
 
-            eventNameMapping1.RegisterEvent<OnlyAttributeEvent>();
-            eventNameMapping2.RegisterEvent<OnlyConstantEvent>();
+            eventNameMap1.RegisterEvent<OnlyAttributeEvent>();
+            eventNameMap2.RegisterEvent<OnlyConstantEvent>();
 
-            eventNameMapping1.Merge(eventNameMapping2);
+            eventNameMap1.Merge(eventNameMap2);
 
-            Assert.That(eventNameMapping1.GetEventNameForClrType(typeof(OnlyAttributeEvent)),
+            Assert.That(eventNameMap1.GetEventNameForClrType(typeof(OnlyAttributeEvent)),
                         Is.EqualTo(AttributeEventName));
             
-            Assert.That(eventNameMapping1.GetEventNameForClrType(typeof(OnlyConstantEvent)),
+            Assert.That(eventNameMap1.GetEventNameForClrType(typeof(OnlyConstantEvent)),
                         Is.EqualTo(ConstantEventName));
         }
 
         private static void VerifyEventNameForEvent(Type eventType, string expectedEventName)
         {
-            var eventNameMapping = new EventNameMapping();
-            eventNameMapping.RegisterEvent(eventType);
+            var eventNameMap = new EventNameMap();
+            eventNameMap.RegisterEvent(eventType);
 
-            Assert.That(eventNameMapping.GetEventNameForClrType(eventType),
+            Assert.That(eventNameMap.GetEventNameForClrType(eventType),
                         Is.EqualTo(expectedEventName));
         }
     }
 
-    [EventName(EventNameMappingTests.AttributeEventName)]
+    [EventName(EventNameMapTests.AttributeEventName)]
     public class OnlyAttributeEvent
     {
     }
 
-    [EventName(EventNameMappingTests.AttributeEventName)]
+    [EventName(EventNameMapTests.AttributeEventName)]
     public class OnlyAttributeEvent2
     {
     }
 
-    [EventName(EventNameMappingTests.AttributeEventName)]
+    [EventName(EventNameMapTests.AttributeEventName)]
     public class AttributeAndConstantEvent
     {
-        public const string EventName = EventNameMappingTests.ConstantEventName;
+        public const string EventName = EventNameMapTests.ConstantEventName;
     }
 
     public class OnlyConstantEvent
     {
-        public const string EventName = EventNameMappingTests.ConstantEventName;
+        public const string EventName = EventNameMapTests.ConstantEventName;
     }
 
     public class OnlyClassNameEvent
     {
     }
 
-    [EventName(EventNameMappingTests.DerivedAttributeEventName)]
+    [EventName(EventNameMapTests.DerivedAttributeEventName)]
     public class DerivedEvent : OnlyAttributeEvent
     {
     }
 
     public class DerivedEventWithConstantOnly : OnlyAttributeEvent
     {
-        public const string EventName = EventNameMappingTests.ConstantEventName;
+        public const string EventName = EventNameMapTests.ConstantEventName;
     }
 }

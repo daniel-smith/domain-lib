@@ -22,7 +22,7 @@ namespace Shopping.Domain.Aggregates
             ApplyEventRouter = routes.Build();
         }
 
-        public IEventNameMapping EventNameMappings { get; } = ApplyEventRouter.EventNameMappings;
+        public IEventNameMap EventNameMap { get; } = ApplyEventRouter.EventNameMap;
         public Guid? Id { get; private set; }
         public IReadOnlyList<string> Items { get; private set; } = new List<string>();
 
