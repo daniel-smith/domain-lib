@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using DomainLib.Persistence;
 using DomainLib.Serialization;
@@ -173,7 +174,8 @@ namespace DomainLib.Tests.Serialization
 
         private static IDictionary<string, string> GetMetadataFromEventPersistenceData(IEventPersistenceData persistenceData)
         {
-            return JsonSerializer.Deserialize<Dictionary<string, string>>(persistenceData.EventMetadata);
+            return JsonSerializer.Deserialize<List<KeyValuePair<string, string>>>(persistenceData.EventMetadata)
+                                 .ToDictionary(x => x.Key, x => x.Value);
         }
 
         public class TestEvent

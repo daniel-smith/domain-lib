@@ -70,16 +70,17 @@ namespace DomainLib.Persistence
             _lazyEntries.Add(key, valueFunc);
         }
 
-        public IDictionary<string, string> BuildMetadata()
+        public IEnumerable<KeyValuePair<string, string>> BuildMetadata()
         {
-            var evaluatedMetadata = _metaDataEntries.ToDictionary(x => x.Key, x => x.Value);
+            return _metaDataEntries.Concat(EvaluateLazyEntries());
+        }
 
-            foreach (var lazyEntry in _lazyEntries)
+        private IEnumerable<KeyValuePair<string, string>> EvaluateLazyEntries()
+        {
+            foreach (var kvp in _lazyEntries)
             {
-                evaluatedMetadata.Add(lazyEntry.Key, lazyEntry.Value());
+                yield return KeyValuePair.Create(kvp.Key, kvp.Value());
             }
-
-            return evaluatedMetadata;
         }
     }
 }
