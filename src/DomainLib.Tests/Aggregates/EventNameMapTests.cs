@@ -1,7 +1,8 @@
 ﻿using System;
 using DomainLib.Aggregates;
 using NUnit.Framework;
-
+//TODO: Rewrite these tests using the EventRegistry if we decide to go that route
+/*
 namespace DomainLib.Tests.Aggregates
 {
     [TestFixture]
@@ -131,4 +132,4 @@ namespace DomainLib.Tests.Aggregates
     {
         public const string EventName = EventNameMapTests.ConstantEventName;
     }
-}
+}*/

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DomainLib;
 using DomainLib.Aggregates;
 using Shopping.Domain.Commands;
 using Shopping.Domain.Events;
@@ -10,28 +11,29 @@ namespace Shopping.Domain.Aggregates
     // Note: the immutable implementation could be better. It's just for demo purposes.
     public class ShoppingCart
     {
-        private static readonly ApplyEventRouter<ShoppingCart, IDomainEvent> ApplyEventRouter;
-
         static ShoppingCart()
         {
-            var routes = new ApplyEventRouterBuilder<ShoppingCart, IDomainEvent>();
-           
-            routes.Add<ShoppingCartCreated>((agg, e) => agg.Apply(e));
-            routes.Add<ItemAddedToShoppingCart>((agg, e) => agg.Apply(e));
-            
-            ApplyEventRouter = routes.Build();
+            EventRegistry.ForAggregate<ShoppingCart>(cart =>
+            {
+                cart.Event<ShoppingCartCreated>()
+                    .RouteTo((agg, e) => agg.Apply(e))
+                    .WithName(ShoppingCartCreated.EventName);
+
+                cart.Event<ItemAddedToShoppingCart>()
+                    .RouteTo((agg, e) => agg.Apply(e))
+                    .WithName(ItemAddedToShoppingCart.EventName);
+            });
         }
 
-        public IEventNameMap EventNameMap { get; } = ApplyEventRouter.EventNameMap;
         public Guid? Id { get; private set; }
         public IReadOnlyList<string> Items { get; private set; } = new List<string>();
 
         public static ShoppingCart FromEvents(IEnumerable<IDomainEvent> events) =>
-            ApplyEventRouter.Route(new ShoppingCart(), events);
+            EventRegistry.RouteEvents(new ShoppingCart(), events);
 
         public ICommandResult<ShoppingCart, IDomainEvent> Execute(AddItemToShoppingCart command)
         {
-            var context = CommandExecutionContext.Create(this, ApplyEventRouter);
+            var context = CommandExecutionContext.Create<ShoppingCart, IDomainEvent>(this);
 
             var isNew = Id == null;
             if (isNew)
@@ -48,7 +50,10 @@ namespace Shopping.Domain.Aggregates
 
         private ShoppingCart Apply(ShoppingCartCreated @event)
         {
-            return new ShoppingCart {Id = @event.Id};
+            return new ShoppingCart
+            {
+                Id = @event.Id
+            };
         }
 
         private ShoppingCart Apply(ItemAddedToShoppingCart @event)

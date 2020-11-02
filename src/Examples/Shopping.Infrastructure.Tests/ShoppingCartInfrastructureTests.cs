@@ -1,15 +1,14 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using DomainLib.Aggregates;
-using DomainLib.Persistence;
-using DomainLib.Persistence.EventStore;
+﻿using DomainLib.Persistence.EventStore;
 using DomainLib.Serialization;
 using EventStore.ClientAPI;
 using NUnit.Framework;
 using Shopping.Domain.Aggregates;
 using Shopping.Domain.Commands;
 using Shopping.Domain.Events;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using DomainLib;
 
 namespace Shopping.Infrastructure.Tests
 {
@@ -34,7 +33,7 @@ namespace Shopping.Infrastructure.Tests
 
             var eventsToPersist = result1.AppliedEvents.Concat(result2.AppliedEvents).ToList();
 
-            var serializer = CreateJsonSerializer(initialState.EventNameMap);
+            var serializer = new JsonEventSerializer(EventRegistry.Instance.EventNameMap);
             var repository = new EventStoreEventsRepository(EventStoreConnection, serializer);
 
             var streamName = $"shoppingCart-{result2.NewState.Id.Value}";
@@ -53,15 +52,5 @@ namespace Shopping.Infrastructure.Tests
             Assert.That(loadedAggregate.Items[0], Is.EqualTo("First Item"));
             Assert.That(loadedAggregate.Items[1], Is.EqualTo("Second Item"));
         }
-
-        private static IEventSerializer CreateJsonSerializer(IEventNameMap eventNameMap)
-        {
-            var serializer = new JsonEventSerializer();
-
-            serializer.RegisterEventTypeMappings(eventNameMap);
-
-            return serializer;
-        }
-
     }
 }

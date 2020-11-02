@@ -84,6 +84,7 @@ namespace DomainLib.Tests.Aggregates
         }
 
         [Test]
+        [Ignore("Needs moving to EventRegistry if we use this approach")]
         public void EventNamesAreMappedWhenEventRoutesAreAdded()
         {
             var builder = new ApplyEventRouterBuilder<MyAggregateRoot, IEvent>();

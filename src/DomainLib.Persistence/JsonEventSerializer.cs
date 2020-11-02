@@ -9,11 +9,12 @@ namespace DomainLib.Serialization
     public class JsonEventSerializer : IEventSerializer
     {
         private readonly JsonSerializerOptions _options;
-        private readonly IEventNameMap _eventNameMap = new EventNameMap();
+        private readonly IEventNameMap _eventNameMap;
         private EventMetadataContext _metadataContext;
 
-        public JsonEventSerializer()
+        public JsonEventSerializer(IEventNameMap eventNameMap)
         {
+            _eventNameMap = eventNameMap ?? throw new ArgumentNullException(nameof(eventNameMap));
             _options = new JsonSerializerOptions
             {
                 WriteIndented = true,
@@ -21,8 +22,9 @@ namespace DomainLib.Serialization
             };
         }
 
-        public JsonEventSerializer(JsonSerializerOptions options)
+        public JsonEventSerializer(IEventNameMap eventNameMap, JsonSerializerOptions options)
         {
+            _eventNameMap = eventNameMap ?? throw new ArgumentNullException(nameof(eventNameMap));
             _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
@@ -30,12 +32,6 @@ namespace DomainLib.Serialization
         {
             if (customConverter == null) throw new ArgumentNullException(nameof(customConverter));
             _options.Converters.Add(customConverter);
-        }
-
-        public void RegisterEventTypeMappings(IEventNameMap eventNameMap)
-        {
-            if (eventNameMap == null) throw new ArgumentNullException(nameof(eventNameMap));
-            _eventNameMap.Merge(eventNameMap);
         }
 
         public void UseMetaDataContext(EventMetadataContext metadataContext)

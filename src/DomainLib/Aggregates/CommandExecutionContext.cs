@@ -4,11 +4,10 @@ namespace DomainLib.Aggregates
     {
         public static CommandExecutionContext<TAggregateRoot, TDomainEventBase>
             Create<TAggregateRoot, TDomainEventBase>(
-                TAggregateRoot aggregateRoot,
-                ApplyEventRouter<TAggregateRoot, TDomainEventBase> applyEventRouter)
+                TAggregateRoot aggregateRoot)
         {
             var commandResult = new CommandResult<TAggregateRoot, TDomainEventBase>(aggregateRoot);
-            return new CommandExecutionContext<TAggregateRoot, TDomainEventBase>(commandResult, applyEventRouter);
+            return new CommandExecutionContext<TAggregateRoot, TDomainEventBase>(commandResult);
         }
     }
     
@@ -18,14 +17,10 @@ namespace DomainLib.Aggregates
     /// </summary>
     public class CommandExecutionContext<TAggregateRoot, TDomainEventBase>
     {
-        private readonly ApplyEventRouter<TAggregateRoot, TDomainEventBase> _applyEventRouter;
-
         public CommandExecutionContext(
-            CommandResult<TAggregateRoot, TDomainEventBase> commandResult,
-            ApplyEventRouter<TAggregateRoot, TDomainEventBase> applyEventRouter)
+            CommandResult<TAggregateRoot, TDomainEventBase> commandResult)
         {
             Result = commandResult;
-            _applyEventRouter = applyEventRouter;
         }
         
         /// <summary>
@@ -39,9 +34,9 @@ namespace DomainLib.Aggregates
         public CommandExecutionContext<TAggregateRoot, TDomainEventBase> ApplyEvent<TDomainEvent>(TDomainEvent @event)
             where TDomainEvent : TDomainEventBase
         {
-            var newState = _applyEventRouter.Route(Result.NewState, @event);
+            var newState = EventRegistry.RouteEvent(Result.NewState, @event);
             var newResult = Result.WithNewState(newState, @event);
-            return new CommandExecutionContext<TAggregateRoot, TDomainEventBase>(newResult, _applyEventRouter);
+            return new CommandExecutionContext<TAggregateRoot, TDomainEventBase>(newResult);
         }
     }
 }

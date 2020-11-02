@@ -22,7 +22,7 @@ namespace DomainLib.Aggregates
                 typeof(TDomainEvent), (agg, e) => eventApplier(agg, (TDomainEvent) e));
 
             _routes.Add(route);
-            _eventNameMap.RegisterEvent<TDomainEvent>();
+            //_eventNameMap.RegisterEvent<TDomainEvent>();
         }
 
         public ApplyEventRouter<TAggregateRoot, TDomainEventBase> Build()
