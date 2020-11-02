@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using DomainLib;
 using DomainLib.Aggregates;
 using Shopping.Domain.Commands;
@@ -74,6 +75,8 @@ namespace Shopping.Domain.Aggregates
 
 
 
+
+
     public class ShoppingCartState
     {
         public ShoppingCartState()
@@ -101,8 +104,14 @@ namespace Shopping.Domain.Aggregates
 
     public static class ShoppingCartFunctions
     {
-        static ShoppingCartFunctions()
+        public static void Register()
         {
+            CommandRegistry.ForAggregate<ShoppingCartState>(cart =>
+            {
+                cart.Command<AddItemToShoppingCart>()
+                    .Executes(Execute);
+            });
+
             EventRegistry.ForAggregate<ShoppingCartState>(cart =>
             {
                 cart.Event<ShoppingCartCreated>()
@@ -115,21 +124,16 @@ namespace Shopping.Domain.Aggregates
             });
         }
 
-        public static ICommandResult<ShoppingCartState, IDomainEvent> Execute(ShoppingCartState currentState, AddItemToShoppingCart command)
+        private static IEnumerable<IDomainEvent> Execute(ShoppingCartState currentState, AddItemToShoppingCart command)
         {
-            var context = CommandExecutionContext.Create<ShoppingCartState, IDomainEvent>(currentState);
-
             var isNew = currentState.Id == null;
+
             if (isNew)
             {
-                var shoppingCartCreated = new ShoppingCartCreated(command.Id);
-                context = context.ApplyEvent(shoppingCartCreated);
+                yield return new ShoppingCartCreated(command.Id);
             }
 
-            var itemAddedToShoppingCart = new ItemAddedToShoppingCart(command.Id, command.Item);
-            context = context.ApplyEvent(itemAddedToShoppingCart);
-
-            return context.Result;
+            yield return new ItemAddedToShoppingCart(command.Id, command.Item);
         }
 
         private static ShoppingCartState Apply(ShoppingCartState currentState, ShoppingCartCreated @event)

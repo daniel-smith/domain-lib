@@ -6,6 +6,7 @@ using System.Linq;
 namespace DomainLib
 {
     public delegate TAggregate ApplyEvent<TAggregate, in TEvent>(TAggregate aggregate, TEvent @event);
+    
 
     public class EventRegistry
     {
@@ -44,16 +45,16 @@ namespace DomainLib
             //}
 
             //// No default route specified.
-            var message = $"No route or default route found when attempting to apply " +
+            var message = $"No route or default route found when attempting to apply event " +
                           $"{eventType.Name} to {aggregateRootType.Name}";
             throw new InvalidOperationException(message);
         }
-
+        
         internal void RegisterEventRoute<TAggregate, TEvent>(ApplyEvent<TAggregate, TEvent> applyEvent)
         {
             _eventRoutes.Add((typeof(TAggregate), typeof(TEvent)), (agg, e) => applyEvent((TAggregate)agg, (TEvent)e));
         }
-
+        
         internal void RegisterEventName<TEvent>(string eventName)
         {
             _eventNameMap.RegisterEvent<TEvent>(eventName);
@@ -96,4 +97,5 @@ namespace DomainLib
             return this;
         }
     }
+
 }
