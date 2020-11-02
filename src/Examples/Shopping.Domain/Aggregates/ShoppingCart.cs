@@ -67,4 +67,85 @@ namespace Shopping.Domain.Aggregates
             return new ShoppingCart {Id = Id, Items = newItems};
         }
     }
+
+
+
+
+
+
+
+    public class ShoppingCartState
+    {
+        public ShoppingCartState()
+        {
+        }
+
+        public ShoppingCartState(Guid? id)
+        {
+            Id = id;
+            Items = new List<string>();
+        }
+
+        public ShoppingCartState(Guid? id, IReadOnlyList<string> items)
+        {
+            Id = id;
+            Items = items;
+        }
+
+        public Guid? Id { get;  }
+        public IReadOnlyList<string> Items { get; }
+
+        public static ShoppingCartState FromEvents(IEnumerable<IDomainEvent> events) =>
+            EventRegistry.RouteEvents(new ShoppingCartState(), events);
+    }
+
+    public static class ShoppingCartFunctions
+    {
+        static ShoppingCartFunctions()
+        {
+            EventRegistry.ForAggregate<ShoppingCartState>(cart =>
+            {
+                cart.Event<ShoppingCartCreated>()
+                    .RouteTo(Apply)
+                    .WithName(ShoppingCartCreated.EventName);
+
+                cart.Event<ItemAddedToShoppingCart>()
+                    .RouteTo(Apply)
+                    .WithName(ItemAddedToShoppingCart.EventName);
+            });
+        }
+
+        public static ICommandResult<ShoppingCartState, IDomainEvent> Execute(ShoppingCartState currentState, AddItemToShoppingCart command)
+        {
+            var context = CommandExecutionContext.Create<ShoppingCartState, IDomainEvent>(currentState);
+
+            var isNew = currentState.Id == null;
+            if (isNew)
+            {
+                var shoppingCartCreated = new ShoppingCartCreated(command.Id);
+                context = context.ApplyEvent(shoppingCartCreated);
+            }
+
+            var itemAddedToShoppingCart = new ItemAddedToShoppingCart(command.Id, command.Item);
+            context = context.ApplyEvent(itemAddedToShoppingCart);
+
+            return context.Result;
+        }
+
+        private static ShoppingCartState Apply(ShoppingCartState currentState, ShoppingCartCreated @event)
+        {
+            return new ShoppingCartState(@event.Id);
+        }
+
+        private static ShoppingCartState Apply(ShoppingCartState currentState, ItemAddedToShoppingCart @event)
+        {
+            if (currentState.Id != @event.Id)
+            {
+                throw new InvalidOperationException("Attempted to add an item for a shopping cart with a different ID");
+            }
+
+            var newItems = new List<string>(currentState.Items) { @event.Item };
+            return new ShoppingCartState(currentState.Id, newItems);
+        }
+    }
 }
