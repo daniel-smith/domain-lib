@@ -101,7 +101,7 @@ namespace Shopping.Domain.Aggregates
         public static ShoppingCartState FromEvents(IEnumerable<IDomainEvent> events) =>
             EventRegistry.RouteEvents(new ShoppingCartState(), events);
     }
-
+    
     public static class ShoppingCartFunctions
     {
         public static void Register()
@@ -124,9 +124,9 @@ namespace Shopping.Domain.Aggregates
             });
         }
 
-        private static IEnumerable<IDomainEvent> Execute(ShoppingCartState currentState, AddItemToShoppingCart command)
+        private static IEnumerable<IDomainEvent> Execute(Func<ShoppingCartState> getState, AddItemToShoppingCart command)
         {
-            var isNew = currentState.Id == null;
+            var isNew = getState().Id == null;
 
             if (isNew)
             {

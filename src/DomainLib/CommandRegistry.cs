@@ -1,11 +1,11 @@
-﻿using System;
+﻿using DomainLib.Aggregates;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using DomainLib.Aggregates;
 
 namespace DomainLib
 {
-    public delegate IEnumerable<TEvent> ApplyCommand<in TAggregate, out TEvent, in TCommand>(TAggregate aggregate, TCommand command);
+    public delegate IEnumerable<TEvent> ApplyCommand<in TAggregate, out TEvent, in TCommand>(Func<TAggregate> aggregate, TCommand command);
 
     public class CommandRegistry
     {
@@ -24,12 +24,19 @@ namespace DomainLib
             var commandType = command.GetType();
             var aggregateRootType = aggregateRoot.GetType();
             var aggregateAndCommandTypes = (aggregateRootType, commandType);
+            TAggregate currentState = aggregateRoot;
 
             if (Instance._commandRoutes.TryGetValue(aggregateAndCommandTypes, out var applyCommand))
             {
                 var initialContext = CommandExecutionContext.Create<TAggregate, TEvent>(aggregateRoot);
-                var result = applyCommand(aggregateRoot, command)
-                    .Aggregate(initialContext, (context, @event) => context.ApplyEvent((TEvent) @event));
+                var result = applyCommand(() => currentState, command)
+                    .Aggregate(initialContext, (context, @event) =>
+                    {
+                        var newContext = context.ApplyEvent((TEvent)@event);
+                        currentState = newContext.Result.NewState;
+
+                        return newContext;
+                    });
 
                 return result.Result;
             }
@@ -41,7 +48,7 @@ namespace DomainLib
 
         internal void RegisterCommandRoute<TAggregate, TCommand, TEvent>(ApplyCommand<TAggregate, TEvent, TCommand> applyCommand)
         {
-            _commandRoutes.Add((typeof(TAggregate), typeof(TCommand)), (agg, cmd) => (IEnumerable<object>)applyCommand((TAggregate)agg, (TCommand)cmd));
+            _commandRoutes.Add((typeof(TAggregate), typeof(TCommand)), (agg, cmd) => (IEnumerable<object>)applyCommand(() => (TAggregate)agg(), (TCommand)cmd));
         }
     }
 
