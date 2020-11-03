@@ -6,12 +6,12 @@ namespace DomainLib.Routing
 {
     public class CommandDispatcher<TCommandBase, TEventBase>
     {
-        private readonly CommandRoutes<TCommandBase, TEventBase> _routes;
+        private readonly CommandRegistrations<TCommandBase, TEventBase> _registrations;
         private readonly EventDispatcher<TEventBase> _eventDispatcher;
 
-        public CommandDispatcher(CommandRoutes<TCommandBase, TEventBase> commandRoutes, EventDispatcher<TEventBase> eventDispatcher)
+        public CommandDispatcher(CommandRegistrations<TCommandBase, TEventBase> registrations, EventDispatcher<TEventBase> eventDispatcher)
         {
-            _routes = commandRoutes ?? throw new ArgumentNullException(nameof(commandRoutes));
+            _registrations = registrations ?? throw new ArgumentNullException(nameof(registrations));
             _eventDispatcher = eventDispatcher ?? throw new ArgumentNullException(nameof(eventDispatcher));
         }
 
@@ -22,8 +22,10 @@ namespace DomainLib.Routing
             var aggregateAndCommandTypes = (aggregateRootType, commandType);
             var currentState = aggregateRoot;
 
-            if (_routes.TryGetValue(aggregateAndCommandTypes, out var applyCommand))
+            if (_registrations.Routes.TryGetValue(aggregateAndCommandTypes, out var applyCommand))
             {
+                _registrations.PreCommandHook?.Invoke(command);
+
                 var initialContext = CommandExecutionContext.Create(_eventDispatcher, aggregateRoot);
 
                 var result = applyCommand(() => currentState, command)
@@ -34,6 +36,8 @@ namespace DomainLib.Routing
 
                         return newContext;
                     });
+
+                _registrations.PostCommandHook?.Invoke(command);
 
                 return result.Result;
             }
