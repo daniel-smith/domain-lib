@@ -1,82 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Net;
-using DomainLib;
-using DomainLib.Aggregates;
+using DomainLib.Routing;
 using Shopping.Domain.Commands;
 using Shopping.Domain.Events;
+using System;
+using System.Collections.Generic;
 
 namespace Shopping.Domain.Aggregates
 {
-    // Demonstrates an immutable aggregate, but it could equally be mutable.
+    // Demonstrates immutable state, but it could equally be mutable.
     // Note: the immutable implementation could be better. It's just for demo purposes.
-    public class ShoppingCart
-    {
-        static ShoppingCart()
-        {
-            EventRegistry.ForAggregate<ShoppingCart>(cart =>
-            {
-                cart.Event<ShoppingCartCreated>()
-                    .RouteTo((agg, e) => agg.Apply(e))
-                    .WithName(ShoppingCartCreated.EventName);
-
-                cart.Event<ItemAddedToShoppingCart>()
-                    .RouteTo((agg, e) => agg.Apply(e))
-                    .WithName(ItemAddedToShoppingCart.EventName);
-            });
-        }
-
-        public Guid? Id { get; private set; }
-        public IReadOnlyList<string> Items { get; private set; } = new List<string>();
-
-        public static ShoppingCart FromEvents(IEnumerable<IDomainEvent> events) =>
-            EventRegistry.RouteEvents(new ShoppingCart(), events);
-
-        public ICommandResult<ShoppingCart, IDomainEvent> Execute(AddItemToShoppingCart command)
-        {
-            var context = CommandExecutionContext.Create<ShoppingCart, IDomainEvent>(this);
-
-            var isNew = Id == null;
-            if (isNew)
-            {
-                var shoppingCartCreated = new ShoppingCartCreated(command.Id);
-                context = context.ApplyEvent(shoppingCartCreated);
-            }
-
-            var itemAddedToShoppingCart = new ItemAddedToShoppingCart(command.Id, command.Item);
-            context = context.ApplyEvent(itemAddedToShoppingCart);
-
-            return context.Result;
-        }
-
-        private ShoppingCart Apply(ShoppingCartCreated @event)
-        {
-            return new ShoppingCart
-            {
-                Id = @event.Id
-            };
-        }
-
-        private ShoppingCart Apply(ItemAddedToShoppingCart @event)
-        {
-            if (Id != @event.Id)
-            {
-                throw new InvalidOperationException("Attempted to add an item for a shopping cart with a different ID");
-            }
-            
-            var newItems = new List<string>(Items) {@event.Item};
-            return new ShoppingCart {Id = Id, Items = newItems};
-        }
-    }
-
-
-
-
-
-
-
-
-
     public class ShoppingCartState
     {
         public ShoppingCartState()
@@ -98,29 +29,27 @@ namespace Shopping.Domain.Aggregates
         public Guid? Id { get;  }
         public IReadOnlyList<string> Items { get; }
 
-        public static ShoppingCartState FromEvents(IEnumerable<IDomainEvent> events) =>
-            EventRegistry.RouteEvents(new ShoppingCartState(), events);
+        public static ShoppingCartState FromEvents(EventDispatcher<IDomainEvent> eventDispatcher,
+                                                   IEnumerable<IDomainEvent> events) =>
+            eventDispatcher.DispatchEvents(new ShoppingCartState(), events);
     }
     
     public static class ShoppingCartFunctions
     {
-        public static void Register()
+        public static void Register(MessageRegistry<object, IDomainEvent> messageRegistry)
         {
-            CommandRegistry.ForAggregate<ShoppingCartState>(cart =>
+            messageRegistry.RegisterAggregate<ShoppingCartState>(cart =>
             {
                 cart.Command<AddItemToShoppingCart>()
-                    .Executes(Execute);
-            });
+                    .RoutesTo(Execute);
 
-            EventRegistry.ForAggregate<ShoppingCartState>(cart =>
-            {
                 cart.Event<ShoppingCartCreated>()
-                    .RouteTo(Apply)
-                    .WithName(ShoppingCartCreated.EventName);
+                    .RoutesTo(Apply)
+                    .HasName(ShoppingCartCreated.EventName);
 
                 cart.Event<ItemAddedToShoppingCart>()
-                    .RouteTo(Apply)
-                    .WithName(ItemAddedToShoppingCart.EventName);
+                    .RoutesTo(Apply)
+                    .HasName(ItemAddedToShoppingCart.EventName);
             });
         }
 
