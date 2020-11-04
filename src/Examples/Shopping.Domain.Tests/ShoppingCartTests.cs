@@ -14,12 +14,14 @@ namespace Shopping.Domain.Tests
         [Test]
         public void RoundTripTest()
         {
-            var messageRegistry = MessageRegistry.Create<object, IDomainEvent>();
-            ShoppingCartFunctions.Register(messageRegistry);
+            var aggregateRegistryBuilder = AggregateRegistryBuilder.Create<object, IDomainEvent>();
+            ShoppingCartFunctions.Register(aggregateRegistryBuilder);
             var shoppingCartId = Guid.NewGuid(); // This could come from a sequence, or could be the customer's ID.
 
-            var commandDispatcher = messageRegistry.BuildCommandDispatcher();
-            var eventDispatcher = messageRegistry.BuildEventDispatcher();
+            var aggregateRegistry = aggregateRegistryBuilder.Build();
+
+            var commandDispatcher = aggregateRegistry.CommandDispatcher;
+            var eventDispatcher = aggregateRegistry.EventDispatcher;
 
             // Execute the first command.
             var initialState = new ShoppingCartState();

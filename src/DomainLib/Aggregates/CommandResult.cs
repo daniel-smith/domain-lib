@@ -19,6 +19,7 @@ namespace DomainLib.Aggregates
         
         public TAggregateRoot NewState { get; }
         public IReadOnlyList<TDomainEventBase> AppliedEvents => _appliedEvents;
+        public long EventNumber => 0;
 
         public CommandResult<TAggregateRoot, TDomainEventBase> WithNewState(
             TAggregateRoot newState, TDomainEventBase appliedEvent)

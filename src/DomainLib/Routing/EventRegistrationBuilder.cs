@@ -2,22 +2,22 @@
 {
     public class EventRegistrationBuilder<TAggregate, TCommandBase, TEventBase, TEvent> where TEvent : TEventBase
     {
-        private readonly MessageRegistry<TCommandBase, TEventBase> _messageRegistry;
+        private readonly AggregateRegistryBuilder<TCommandBase, TEventBase> _aggregateRegistryBuilder;
 
-        public EventRegistrationBuilder(MessageRegistry<TCommandBase, TEventBase> messageRegistry)
+        public EventRegistrationBuilder(AggregateRegistryBuilder<TCommandBase, TEventBase> aggregateRegistryBuilder)
         {
-            _messageRegistry = messageRegistry;
+            _aggregateRegistryBuilder = aggregateRegistryBuilder;
         }
 
         public EventRegistrationBuilder<TAggregate, TCommandBase, TEventBase, TEvent> RoutesTo(ApplyEvent<TAggregate, TEvent> applyEvent)
         {
-            _messageRegistry.RegisterEventRoute(applyEvent);
+            _aggregateRegistryBuilder.RegisterEventRoute(applyEvent);
             return this;
         }
 
         public EventRegistrationBuilder<TAggregate, TCommandBase, TEventBase, TEvent> HasName(string name)
         {
-            _messageRegistry.RegisterEventName<TEvent>(name);
+            _aggregateRegistryBuilder.RegisterEventName<TEvent>(name);
             return this;
         }
     }

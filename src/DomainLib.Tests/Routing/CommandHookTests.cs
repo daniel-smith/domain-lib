@@ -11,11 +11,11 @@ namespace DomainLib.Tests.Routing
         {
             var loggedMessages = new List<string>();
             
-            var messageRegistry = MessageRegistry.Create<TestCommand, TestEvent>();
-            messageRegistry.RegisterPreCommandHook(cmd => loggedMessages.Add($"Pre-command {cmd.Name}"));
-            messageRegistry.RegisterPostCommandHook(cmd => loggedMessages.Add($"Post-command {cmd.Name}"));
+            var aggregateRegistryBuilder = AggregateRegistryBuilder.Create<TestCommand, TestEvent>();
+            aggregateRegistryBuilder.RegisterPreCommandHook(cmd => loggedMessages.Add($"Pre-command {cmd.Name}"));
+            aggregateRegistryBuilder.RegisterPostCommandHook(cmd => loggedMessages.Add($"Post-command {cmd.Name}"));
 
-            messageRegistry.RegisterAggregate<State>(x =>
+            aggregateRegistryBuilder.Register<State>(x =>
             {
                 x.Command<TestCommand>().RoutesTo((_, cmd) => new List<TestEvent> {new TestEvent(cmd.Name)});
                 x.Event<TestEvent>().RoutesTo((state, e) =>
@@ -25,7 +25,7 @@ namespace DomainLib.Tests.Routing
                 }).HasName("TestEvent");
             });
 
-            messageRegistry.BuildCommandDispatcher().Dispatch(new State(), new TestCommand("My command"));
+            aggregateRegistryBuilder.Build().CommandDispatcher.Dispatch(new State(), new TestCommand("My command"));
 
             Assert.That(loggedMessages, Is.EquivalentTo(new List<string>
             {
@@ -33,7 +33,6 @@ namespace DomainLib.Tests.Routing
                 "My command",
                 "Post-command My command"
             }));
-
         }
 
         public class State

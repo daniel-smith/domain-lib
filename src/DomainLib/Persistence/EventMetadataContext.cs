@@ -70,9 +70,11 @@ namespace DomainLib.Persistence
             _lazyEntries.Add(key, valueFunc);
         }
 
-        public IEnumerable<KeyValuePair<string, string>> BuildMetadata()
+        public IEnumerable<KeyValuePair<string, string>> BuildMetadata(params KeyValuePair<string, string>[] additionalEntries)
         {
-            return _metaDataEntries.Concat(EvaluateLazyEntries());
+            return _metaDataEntries
+                   .Concat(EvaluateLazyEntries())
+                   .Concat(additionalEntries);
         }
 
         private IEnumerable<KeyValuePair<string, string>> EvaluateLazyEntries()

@@ -36,20 +36,23 @@ namespace Shopping.Domain.Aggregates
     
     public static class ShoppingCartFunctions
     {
-        public static void Register(MessageRegistry<object, IDomainEvent> messageRegistry)
+        public static void Register(AggregateRegistryBuilder<object, IDomainEvent> aggregateRegistryBuilder)
         {
-            messageRegistry.RegisterAggregate<ShoppingCartState>(cart =>
+            aggregateRegistryBuilder.Register<ShoppingCartState>(aggregate =>
             {
-                cart.Command<AddItemToShoppingCart>()
-                    .RoutesTo(Execute);
+                aggregate.PersistenceKey(id => $"shoppingCart-{id}");
+                aggregate.SnapshotKey(id => $"shoppingCartSnapshot-{id}");
 
-                cart.Event<ShoppingCartCreated>()
-                    .RoutesTo(Apply)
-                    .HasName(ShoppingCartCreated.EventName);
+                aggregate.Command<AddItemToShoppingCart>()
+                         .RoutesTo(Execute);
 
-                cart.Event<ItemAddedToShoppingCart>()
-                    .RoutesTo(Apply)
-                    .HasName(ItemAddedToShoppingCart.EventName);
+                aggregate.Event<ShoppingCartCreated>()
+                         .RoutesTo(Apply)
+                         .HasName(ShoppingCartCreated.EventName);
+
+                aggregate.Event<ItemAddedToShoppingCart>()
+                         .RoutesTo(Apply)
+                         .HasName(ItemAddedToShoppingCart.EventName);
             });
         }
 
