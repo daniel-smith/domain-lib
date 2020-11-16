@@ -1,6 +1,6 @@
 ﻿namespace DomainLib.Persistence
 {
-    public class Snapshot<T>
+    public sealed class Snapshot<T>
     {
         public Snapshot(T snapshotState, long version)
         {

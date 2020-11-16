@@ -1,8 +1,9 @@
-using DomainLib.Routing;
 using Shopping.Domain.Commands;
 using Shopping.Domain.Events;
 using System;
 using System.Collections.Generic;
+using DomainLib.Aggregates;
+using DomainLib.Aggregates.Registration;
 
 namespace Shopping.Domain.Aggregates
 {

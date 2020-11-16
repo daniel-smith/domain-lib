@@ -1,6 +1,7 @@
-﻿using DomainLib.Routing;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using System.Collections.Generic;
+using DomainLib.Aggregates;
+using DomainLib.Aggregates.Registration;
 
 namespace DomainLib.Tests.Routing
 {

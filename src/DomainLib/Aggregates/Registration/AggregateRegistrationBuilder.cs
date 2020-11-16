@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace DomainLib.Routing
+namespace DomainLib.Aggregates.Registration
 {
-    public class AggregateRegistrationBuilder<TAggregate, TCommandBase, TEventBase>
+    public sealed class AggregateRegistrationBuilder<TAggregate, TCommandBase, TEventBase>
     {
         private readonly AggregateRegistryBuilder<TCommandBase, TEventBase> _aggregateRegistryBuilder;
 
@@ -13,12 +13,12 @@ namespace DomainLib.Routing
 
         public CommandRegistrationBuilder<TAggregate, TCommandBase, TCommand, TEventBase> Command<TCommand>() where TCommand : TCommandBase
         {
-            return new CommandRegistrationBuilder<TAggregate, TCommandBase, TCommand, TEventBase>(_aggregateRegistryBuilder);
+            return new(_aggregateRegistryBuilder);
         }
 
         public EventRegistrationBuilder<TAggregate, TCommandBase, TEventBase, TEvent> Event<TEvent>() where TEvent : TEventBase
         {
-            return new EventRegistrationBuilder<TAggregate, TCommandBase, TEventBase, TEvent>(_aggregateRegistryBuilder);
+            return new(_aggregateRegistryBuilder);
         }
 
         public AggregateRegistrationBuilder<TAggregate, TCommandBase, TEventBase> PersistenceKey(Func<string, string> getPersistenceKey)

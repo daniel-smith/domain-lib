@@ -1,6 +1,6 @@
 ﻿namespace DomainLib.Persistence
 {
-    public class VersionedAggregateState<T>
+    public sealed class VersionedAggregateState<T>
     {
         public VersionedAggregateState(T aggregateState, long version)
         {

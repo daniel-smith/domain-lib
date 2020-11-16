@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Linq;
-using DomainLib.Aggregates;
+using DomainLib.Aggregates.Registration;
 
-namespace DomainLib.Routing
+namespace DomainLib.Aggregates
 {
-    public class CommandDispatcher<TCommandBase, TEventBase>
+    /// <summary>
+    /// Dispatches commands to an aggregate root, where they are executed and produce an updated aggregate state
+    /// along with one or more domain events representing the changes that have occurred
+    /// </summary>
+    public sealed class CommandDispatcher<TCommandBase, TEventBase>
     {
         private readonly CommandRegistrations<TCommandBase, TEventBase> _registrations;
         private readonly EventDispatcher<TEventBase> _eventDispatcher;
 
-        public CommandDispatcher(CommandRegistrations<TCommandBase, TEventBase> registrations, EventDispatcher<TEventBase> eventDispatcher)
+        internal CommandDispatcher(CommandRegistrations<TCommandBase, TEventBase> registrations, EventDispatcher<TEventBase> eventDispatcher)
         {
             _registrations = registrations ?? throw new ArgumentNullException(nameof(registrations));
             _eventDispatcher = eventDispatcher ?? throw new ArgumentNullException(nameof(eventDispatcher));

@@ -1,5 +1,3 @@
-using DomainLib.Routing;
-
 namespace DomainLib.Aggregates
 {
     public static class CommandExecutionContext
@@ -17,7 +15,7 @@ namespace DomainLib.Aggregates
     /// Applies state mutations to an aggregate root by routing the events that occur as part of executing a command
     /// to their appropriate "apply event" methods.
     /// </summary>
-    public class CommandExecutionContext<TAggregateRoot, TDomainEventBase>
+    public sealed class CommandExecutionContext<TAggregateRoot, TDomainEventBase>
     {
         private readonly EventDispatcher<TDomainEventBase> _eventDispatcher;
 

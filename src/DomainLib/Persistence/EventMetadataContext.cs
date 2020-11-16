@@ -12,7 +12,7 @@ namespace DomainLib.Persistence
         public const string UtcDateTime = "UtcDataTime";
     }
 
-    public class EventMetadataContext
+    public sealed class EventMetadataContext
     {
         private readonly Dictionary<string, string> _metaDataEntries = new Dictionary<string, string>();
         private readonly Dictionary<string, Func<string>> _lazyEntries = new Dictionary<string, Func<string>>();

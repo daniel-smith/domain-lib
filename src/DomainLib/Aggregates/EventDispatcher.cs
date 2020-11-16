@@ -2,18 +2,26 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace DomainLib.Routing
+namespace DomainLib.Aggregates
 {
-    public class EventDispatcher<TEventBase>
+    /// <summary>
+    /// Dispatches domain events onto an aggregate and returns an updated aggregate state
+    /// </summary>
+    public sealed class EventDispatcher<TEventBase>
     {
         private readonly EventRoutes<TEventBase> _routes;
 
-        public EventDispatcher(EventRoutes<TEventBase> eventRoutes)
+        internal EventDispatcher(EventRoutes<TEventBase> eventRoutes)
         {
             _routes = eventRoutes ?? throw new ArgumentNullException(nameof(eventRoutes));
         }
 
         public TAggregate DispatchEvents<TAggregate>(TAggregate aggregateRoot, IEnumerable<TEventBase> events)
+        {
+            return events.Aggregate(aggregateRoot, DispatchEvent);
+        }
+
+        public TAggregate DispatchEvents<TAggregate>(TAggregate aggregateRoot, params TEventBase[] events)
         {
             return events.Aggregate(aggregateRoot, DispatchEvent);
         }

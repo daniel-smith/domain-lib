@@ -1,10 +1,10 @@
-﻿using DomainLib.Routing;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using DomainLib.Aggregates;
 
 namespace DomainLib.Persistence
 {
-    public class AggregateRepository<TEventBase> : IAggregateRepository<TEventBase>
+    public sealed class AggregateRepository<TEventBase> : IAggregateRepository<TEventBase>
     {
         private readonly IEventsRepository _repository;
         private readonly ISnapshotRepository _snapshotRepository;

@@ -1,6 +1,6 @@
-﻿namespace DomainLib.Routing
+﻿namespace DomainLib.Aggregates.Registration
 {
-    public class EventRegistrationBuilder<TAggregate, TCommandBase, TEventBase, TEvent> where TEvent : TEventBase
+    public sealed class EventRegistrationBuilder<TAggregate, TCommandBase, TEventBase, TEvent> where TEvent : TEventBase
     {
         private readonly AggregateRegistryBuilder<TCommandBase, TEventBase> _aggregateRegistryBuilder;
 

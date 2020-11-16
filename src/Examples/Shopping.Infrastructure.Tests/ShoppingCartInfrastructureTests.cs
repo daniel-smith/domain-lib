@@ -1,6 +1,5 @@
 ﻿using DomainLib.Persistence;
 using DomainLib.Persistence.EventStore;
-using DomainLib.Routing;
 using DomainLib.Serialization;
 using EventStore.ClientAPI;
 using NUnit.Framework;
@@ -10,6 +9,8 @@ using Shopping.Domain.Events;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using DomainLib.Aggregates;
+using DomainLib.Aggregates.Registration;
 
 namespace Shopping.Infrastructure.Tests
 {

@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace DomainLib.Routing
+namespace DomainLib.Aggregates
 {
-    public class AggregateMetadata
+    public sealed class AggregateMetadata
     {
         public Func<object, string> GetIdentifier { get; internal set; }
         public Func<string, string> GetKeyFromIdentifier { get; internal set; }
