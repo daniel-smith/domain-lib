@@ -38,18 +38,18 @@ namespace DomainLib.Persistence.EventStore
                 throw;
             }
 
+            var streamVersion = MapStreamVersionToEventStoreStreamVersion(expectedStreamVersion);
             if (eventDatas.Length == 0)
             {
                 Log.LogWarning("No events in batch. Exiting");
-                return expectedStreamVersion;
+                return streamVersion;
             }
 
             // Use the ID of the first event in the batch as an identifier for the whole write to ES
             var writeId = eventDatas[0].EventId;
 
-            var streamVersion = MapStreamVersionToEventStoreStreamVersion(expectedStreamVersion);
             Log.LogDebug("Appending {EventCount} events to stream {StreamName}. Expected stream version {StreamVersion}. Write ID {WriteId}", 
-                             eventDatas.Length, streamName, streamVersion, writeId);
+                         eventDatas.Length, streamName, streamVersion, writeId);
 
             if (Log.IsEnabled(LogLevel.Trace))
             {
@@ -82,7 +82,7 @@ namespace DomainLib.Persistence.EventStore
                         await transaction.WriteAsync(eventsSlice);
                         Log.LogDebug("Slice written to transaction {TransactionId}. Write Id {WriteId}", transaction.TransactionId, writeId);
 
-                        sliceStartPosition += MaxWriteBatchSize + 1;
+                        sliceStartPosition += MaxWriteBatchSize;
 
                         if (sliceStartPosition >= eventDatas.Length)
                         {
@@ -155,6 +155,7 @@ namespace DomainLib.Persistence.EventStore
             return streamVersion switch
             {
                 StreamVersion.Any => ExpectedVersion.Any,
+                StreamVersion.NewStream => ExpectedVersion.NoStream,
                 _ => streamVersion
             };
         }
