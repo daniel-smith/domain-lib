@@ -44,9 +44,20 @@ namespace DomainLib.Aggregates.Registration
             _commandRegistrations.PostCommandHook = hook;
         }
 
-        internal void RegisterCommandRoute<TAggregate, TCommand, TEvent>(ExecuteCommand<TAggregate, TCommand, TEvent> executeCommand) where TCommand : TCommandBase
+        internal void RegisterCommandRoute<TAggregate, TCommand, TEvent>(
+            ExecuteCommand<TAggregate, TCommand, TEvent> executeCommand) where TCommand : TCommandBase
         {
-            _commandRegistrations.Routes.Add((typeof(TAggregate), typeof(TCommand)), (agg, cmd) => (IEnumerable<TEventBase>) executeCommand(() => (TAggregate)agg(), (TCommand)cmd));
+            _commandRegistrations.Routes.Add(
+                (typeof(TAggregate), typeof(TCommand)),
+                (agg, cmd) => (IEnumerable<TEventBase>) executeCommand((TAggregate) agg, (TCommand) cmd));
+        }
+
+        internal void RegisterCommandRoute<TAggregate, TCommand, TEvent>(
+            ImmutableExecuteCommand<TAggregate, TCommand, TEvent> executeCommand) where TCommand : TCommandBase
+        {
+            _commandRegistrations.ImmutableRoutes.Add(
+                (typeof(TAggregate), typeof(TCommand)),
+                (agg, cmd) => (IEnumerable<TEventBase>) executeCommand(() => (TAggregate) agg(), (TCommand) cmd));
         }
 
         internal void RegisterEventRoute<TAggregate, TEvent>(ApplyEvent<TAggregate, TEvent> applyEvent) where TEvent: TEventBase

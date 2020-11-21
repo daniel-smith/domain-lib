@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using DomainLib.Aggregates.Registration;
 
@@ -13,37 +15,63 @@ namespace DomainLib.Aggregates
         private readonly CommandRegistrations<TCommandBase, TEventBase> _registrations;
         private readonly EventDispatcher<TEventBase> _eventDispatcher;
 
-        internal CommandDispatcher(CommandRegistrations<TCommandBase, TEventBase> registrations, EventDispatcher<TEventBase> eventDispatcher)
+        internal CommandDispatcher(
+            CommandRegistrations<TCommandBase, TEventBase> registrations, EventDispatcher<TEventBase> eventDispatcher)
         {
             _registrations = registrations ?? throw new ArgumentNullException(nameof(registrations));
             _eventDispatcher = eventDispatcher ?? throw new ArgumentNullException(nameof(eventDispatcher));
         }
 
-        public ICommandResult<TAggregate, TEventBase> Dispatch<TAggregate>(TAggregate aggregateRoot, TCommandBase command)
+        public IEnumerable<TEventBase> Dispatch<TAggregate>(TAggregate aggregateRoot, TCommandBase command)
         {
             var commandType = command.GetType();
             var aggregateRootType = aggregateRoot.GetType();
-            var aggregateAndCommandTypes = (aggregateRootType, commandType);
-            var currentState = aggregateRoot;
+            var routeKey = (aggregateRootType, commandType);
 
-            if (_registrations.Routes.TryGetValue(aggregateAndCommandTypes, out var applyCommand))
+            if (_registrations.Routes.TryGetValue(routeKey, out var executeCommand))
             {
                 _registrations.PreCommandHook?.Invoke(command);
 
-                var initialContext = CommandExecutionContext.Create(_eventDispatcher, aggregateRoot);
+                var events = executeCommand(aggregateRoot, command).ToList();
+                _eventDispatcher.Dispatch(aggregateRoot, events);
+                _registrations.PostCommandHook?.Invoke(command);
+                return events;
+            }
 
-                var result = applyCommand(() => currentState, command)
-                    .Aggregate(initialContext, (context, @event) =>
+            var message = $"No route found when attempting to apply command " +
+                          $"{commandType.Name} to {aggregateRootType.Name}";
+            throw new InvalidOperationException(message);
+        }
+
+        public (TAggregate, IReadOnlyList<TEventBase>) ImmutableDispatch<TAggregate>(
+            TAggregate aggregateRoot, TCommandBase command)
+        {
+            var commandType = command.GetType();
+            var aggregateRootType = aggregateRoot.GetType();
+            var routeKey = (aggregateRootType, commandType);
+            
+            if (_registrations.ImmutableRoutes.TryGetValue(routeKey, out var executeCommand))
+            {
+                _registrations.PreCommandHook?.Invoke(command);
+
+                var initialResult = (newState: aggregateRoot, events: ImmutableList<TEventBase>.Empty);
+                var currentState = aggregateRoot;
+
+                var finalResult = executeCommand(() => currentState, command)
+                    .Aggregate(initialResult, (result, @event) =>
                     {
-                        var newContext = context.ApplyEvent(@event);
-                        currentState = newContext.Result.NewState;
+                        var (state, events) = result;
+                        var newState = _eventDispatcher.Dispatch(state, @event);
+                        var newEvents = events.Concat(Enumerable.Repeat(@event, 1)).ToImmutableList();
+                        var newResult = (newState, events: newEvents);
+                        currentState = newState;
 
-                        return newContext;
+                        return newResult;
                     });
 
                 _registrations.PostCommandHook?.Invoke(command);
 
-                return result.Result;
+                return finalResult;
             }
 
             var message = $"No route found when attempting to apply command " +

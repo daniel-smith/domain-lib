@@ -2,6 +2,11 @@ using System.Collections.Generic;
 
 namespace DomainLib.Aggregates
 {
+    public interface ICommandResult<out TDomainEventBase>
+    {
+        IReadOnlyList<TDomainEventBase> AppliedEvents { get; }
+    }
+
     /// <summary>
     /// Represent the state mutations that occur as a result of an aggregate root executing a command.
     /// </summary>

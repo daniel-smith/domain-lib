@@ -16,17 +16,17 @@ namespace DomainLib.Aggregates
             _routes = eventRoutes ?? throw new ArgumentNullException(nameof(eventRoutes));
         }
 
-        public TAggregate DispatchEvents<TAggregate>(TAggregate aggregateRoot, IEnumerable<TEventBase> events)
+        public TAggregate Dispatch<TAggregate>(TAggregate aggregateRoot, IEnumerable<TEventBase> events)
         {
-            return events.Aggregate(aggregateRoot, DispatchEvent);
+            return events.Aggregate(aggregateRoot, Dispatch);
         }
 
-        public TAggregate DispatchEvents<TAggregate>(TAggregate aggregateRoot, params TEventBase[] events)
+        public TAggregate Dispatch<TAggregate>(TAggregate aggregateRoot, params TEventBase[] events)
         {
-            return events.Aggregate(aggregateRoot, DispatchEvent);
+            return events.Aggregate(aggregateRoot, Dispatch);
         }
 
-        public TAggregate DispatchEvent<TAggregate>(TAggregate aggregateRoot, TEventBase @event)
+        public TAggregate Dispatch<TAggregate>(TAggregate aggregateRoot, TEventBase @event)
         {
             var eventType = @event.GetType();
             var aggregateRootType = aggregateRoot.GetType();
