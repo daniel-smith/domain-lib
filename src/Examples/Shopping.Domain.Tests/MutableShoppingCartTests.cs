@@ -14,6 +14,7 @@ namespace Shopping.Domain.Tests
         [Test]
         public void RoundTripTest()
         {
+            // Wire up command and event routes for the aggregate.
             var aggregateRegistryBuilder = AggregateRegistryBuilder.Create<object, IDomainEvent>();
             
             aggregateRegistryBuilder.Register<MutableShoppingCart>(reg =>
