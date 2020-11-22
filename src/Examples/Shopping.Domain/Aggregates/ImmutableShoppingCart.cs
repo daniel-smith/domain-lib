@@ -32,7 +32,7 @@ namespace Shopping.Domain.Aggregates
 
         public static ShoppingCartState FromEvents(EventDispatcher<IDomainEvent> eventDispatcher,
                                                    IEnumerable<IDomainEvent> events) =>
-            eventDispatcher.Dispatch(new ShoppingCartState(), events);
+            eventDispatcher.ImmutableDispatch(new ShoppingCartState(), events);
     }
     
     public static class ShoppingCartFunctions

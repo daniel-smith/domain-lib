@@ -20,12 +20,13 @@ namespace DomainLib.Aggregates.Registration
     {
         private readonly CommandRegistrations<TCommandBase, TEventBase> _commandRegistrations = new();
         private readonly EventRoutes<TEventBase> _eventRoutes = new();
+        private readonly ImmutableEventRoutes<TEventBase> _immutableEventRoutes = new();
         private readonly EventNameMap _eventNameMap = new();
         private readonly AggregateMetadataMap _aggregateMetadataMap = new();
 
         public AggregateRegistry<TCommandBase, TEventBase> Build()
         {
-            return new(_commandRegistrations, _eventRoutes, _eventNameMap, _aggregateMetadataMap);
+            return new(_commandRegistrations, _eventRoutes, _immutableEventRoutes, _eventNameMap, _aggregateMetadataMap);
         }
         
         public void Register<TAggregate>(Action<AggregateRegistrationBuilder<TAggregate, TCommandBase, TEventBase>> buildAggregateRegistration)
@@ -59,10 +60,15 @@ namespace DomainLib.Aggregates.Registration
                 (typeof(TAggregate), typeof(TCommand)),
                 (agg, cmd) => (IEnumerable<TEventBase>) executeCommand(() => (TAggregate) agg(), (TCommand) cmd));
         }
-
+        
         internal void RegisterEventRoute<TAggregate, TEvent>(ApplyEvent<TAggregate, TEvent> applyEvent) where TEvent: TEventBase
         {
             _eventRoutes.Add((typeof(TAggregate), typeof(TEvent)), (agg, e) => applyEvent((TAggregate)agg, (TEvent)e));
+        }
+
+        internal void RegisterEventRoute<TAggregate, TEvent>(ImmutableApplyEvent<TAggregate, TEvent> applyEvent) where TEvent: TEventBase
+        {
+            _immutableEventRoutes.Add((typeof(TAggregate), typeof(TEvent)), (agg, e) => applyEvent((TAggregate)agg, (TEvent)e));
         }
 
         internal void RegisterEventName<TEvent>(string eventName)

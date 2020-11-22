@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using DomainLib.Aggregates.Registration;
 
@@ -22,7 +21,7 @@ namespace DomainLib.Aggregates
             _eventDispatcher = eventDispatcher ?? throw new ArgumentNullException(nameof(eventDispatcher));
         }
 
-        public IEnumerable<TEventBase> Dispatch<TAggregate>(TAggregate aggregateRoot, TCommandBase command)
+        public IReadOnlyList<TEventBase> Dispatch<TAggregate>(TAggregate aggregateRoot, TCommandBase command)
         {
             var commandType = command.GetType();
             var aggregateRootType = aggregateRoot.GetType();
@@ -54,16 +53,16 @@ namespace DomainLib.Aggregates
             {
                 _registrations.PreCommandHook?.Invoke(command);
 
-                var initialResult = (newState: aggregateRoot, events: ImmutableList<TEventBase>.Empty);
+                var initialResult = (newState: aggregateRoot, events: new List<TEventBase>());
                 var currentState = aggregateRoot;
 
                 var finalResult = executeCommand(() => currentState, command)
                     .Aggregate(initialResult, (result, @event) =>
                     {
                         var (state, events) = result;
-                        var newState = _eventDispatcher.Dispatch(state, @event);
-                        var newEvents = events.Concat(Enumerable.Repeat(@event, 1)).ToImmutableList();
-                        var newResult = (newState, events: newEvents);
+                        var newState = _eventDispatcher.ImmutableDispatch(state, @event);
+                        events.Add(@event);
+                        var newResult = (newState, events);
                         currentState = newState;
 
                         return newResult;

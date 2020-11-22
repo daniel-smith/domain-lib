@@ -16,15 +16,15 @@ namespace Shopping.Domain.Tests
         {
             var aggregateRegistryBuilder = AggregateRegistryBuilder.Create<object, IDomainEvent>();
             ShoppingCartFunctions.Register(aggregateRegistryBuilder);
-            var shoppingCartId = Guid.NewGuid(); // This could come from a sequence, or could be the customer's ID.
-
+            
             var aggregateRegistry = aggregateRegistryBuilder.Build();
-
             var commandDispatcher = aggregateRegistry.CommandDispatcher;
             var eventDispatcher = aggregateRegistry.EventDispatcher;
 
-            // Execute the first command.
             var initialState = new ShoppingCartState();
+            
+            // Execute the first command.
+            var shoppingCartId = Guid.NewGuid(); // This could come from a sequence, or could be the customer's ID.
             var command1 = new AddItemToShoppingCart(shoppingCartId, "First Item");
             var (newState1, events1) = commandDispatcher.ImmutableDispatch(initialState, command1);
             
