@@ -31,9 +31,18 @@ namespace DomainLib.Aggregates
             {
                 _registrations.PreCommandHook?.Invoke(command);
 
-                var events = executeCommand(aggregateRoot, command).ToList();
-                _eventDispatcher.Dispatch(aggregateRoot, events);
+                // The following code allows invokers of this method to yield return in order to see the side effect of
+                // applying the event to the aggregate.
+                var events = executeCommand(aggregateRoot, command)
+                    .Select(x =>
+                    {
+                        _eventDispatcher.Dispatch(aggregateRoot, x);
+                        return x;
+                    })
+                    .ToList();
+                
                 _registrations.PostCommandHook?.Invoke(command);
+                
                 return events;
             }
 
