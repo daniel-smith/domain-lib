@@ -23,7 +23,7 @@ namespace DomainLib.Persistence
             _metadataMap = metadataMap ?? throw new ArgumentNullException(nameof(metadataMap));
         }
 
-        public async Task<VersionedAggregateState<TAggregateState>> LoadAggregate<TAggregateState>(string id,
+        public async Task<LoadedAggregateState<TAggregateState>> LoadAggregate<TAggregateState>(string id,
                                                                                                    TAggregateState initialAggregateState,
                                                                                                    AggregateLoadStrategy loadStrategy = AggregateLoadStrategy.PreferSnapshot)
         {
@@ -40,6 +40,7 @@ namespace DomainLib.Persistence
             var aggregateMetadata = _metadataMap.GetForType<TAggregateState>();
             var streamName = aggregateMetadata.GetKeyFromIdentifier(id);
             long loadStartPosition = 0;
+            long? snapshotVersion = null;
 
             if (loadStrategy == AggregateLoadStrategy.UseSnapshot ||
                 loadStrategy == AggregateLoadStrategy.PreferSnapshot)
@@ -56,6 +57,7 @@ namespace DomainLib.Persistence
                 }
                 else
                 {
+                    snapshotVersion = snapshot.Version;
                     stateToAppendEventsTo = snapshot.SnapshotState;
                     loadStartPosition = snapshot.Version + 1;
                 }
@@ -68,10 +70,10 @@ namespace DomainLib.Persistence
             }
 
             var events = await _repository.LoadEventsAsync<TEventBase>(streamName, loadStartPosition);
-            var state = _eventDispatcher.ImmutableDispatch(initialAggregateState, events);
+            var state = _eventDispatcher.ImmutableDispatch(stateToAppendEventsTo, events);
             var newVersion = loadStartPosition + events.Count - 1;
 
-            return new VersionedAggregateState<TAggregateState>(state, newVersion);
+            return new LoadedAggregateState<TAggregateState>(state, newVersion, snapshotVersion, events.Count);
         }
 
         public async Task<long> SaveAggregate<TAggregateState>(string id, long expectedVersion, IEnumerable<TEventBase> eventsToApply)
