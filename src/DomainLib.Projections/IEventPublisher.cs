@@ -5,7 +5,7 @@ namespace DomainLib.Projections
 {
     public interface IEventPublisher<TEventBase>
     {
-        Task StartAsync(Action<EventNotification<TEventBase>> onEvent);
+        Task StartAsync(Func<EventNotification<TEventBase>, Task> onEvent);
         void Stop();
     }
 }

@@ -8,8 +8,8 @@
             Event = @event;
         }
 
-        private EventNotificationKind NotificationKind { get; }
-        private TEventBase Event { get; }
+        public EventNotificationKind NotificationKind { get; }
+        public TEventBase Event { get; }
     }
 
     public static class EventNotification

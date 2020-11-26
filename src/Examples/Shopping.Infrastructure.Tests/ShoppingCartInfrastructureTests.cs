@@ -29,11 +29,11 @@ namespace Shopping.Infrastructure.Tests
             // Execute the first command.
             var initialState = new ShoppingCartState();
             
-            var command1 = new AddItemToShoppingCart(shoppingCartId, "First Item");
+            var command1 = new AddItemToShoppingCart(shoppingCartId, Guid.NewGuid(), "First Item");
             var (newState1, events1) = aggregateRegistry.CommandDispatcher.ImmutableDispatch(initialState, command1);
 
             // Execute the second command to the result of the first command.
-            var command2 = new AddItemToShoppingCart(shoppingCartId, "Second Item");
+            var command2 = new AddItemToShoppingCart(shoppingCartId, Guid.NewGuid(), "Second Item");
             var (newState2, events2) = aggregateRegistry.CommandDispatcher.ImmutableDispatch(newState1, command2);
 
             Assert.That(newState2.Id.HasValue, "Expected ShoppingCart ID to be set");

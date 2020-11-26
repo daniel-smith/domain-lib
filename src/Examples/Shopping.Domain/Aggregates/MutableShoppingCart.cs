@@ -21,7 +21,7 @@ namespace Shopping.Domain.Aggregates
                 yield return new ShoppingCartCreated(command.Id);
             }
 
-            yield return new ItemAddedToShoppingCart(command.Id, command.Item);
+            yield return new ItemAddedToShoppingCart(command.Id, command.CartId, command.Item);
         }
 
         public void Apply(ShoppingCartCreated @event)

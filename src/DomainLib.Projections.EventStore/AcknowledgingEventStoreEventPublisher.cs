@@ -5,7 +5,8 @@ namespace DomainLib.Projections.EventStore
 {
     public class AcknowledgingEventStoreEventPublisher<TEventBase> : IEventPublisher<TEventBase>
     {
-        public Task StartAsync(Action<EventNotification<TEventBase>> onEvent)
+
+        public Task StartAsync(Func<EventNotification<TEventBase>, Task> onEvent)
         {
             throw new NotImplementedException();
         }

@@ -1,6 +1,7 @@
 ﻿using DomainLib.Projections.Sql;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Data.SQLite;
 using System.Linq;
@@ -10,35 +11,30 @@ namespace DomainLib.Projections.Sqlite
 {
     public class SqliteSqlDialect : ISqlDialect
     {
+        private readonly string _connectionString;
+
+        public SqliteSqlDialect(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
+
+        public DbConnection CreateConnection()
+        {
+            return new SQLiteConnection(_connectionString);
+        }
+
         public DbCommand BuildUpsertCommand(ISqlProjection projection, Dictionary<PropertyInfo, SqlColumnDefinition> eventPropertyMap)
         {
-            var updateFields = string.Join(", ",
-                                           eventPropertyMap.Where(x => !x.Value.IsInPrimaryKey)
-                                                           .Select(x => $"{x.Value.Name} = @{x.Key.Name}"));
-            var primaryKeyFields = string.Join(", ",
-                                               eventPropertyMap.Where(x => x.Value.IsInPrimaryKey)
-                                                               .Select(x => $"{x.Value.Name} = @{x.Key.Name}"));
             var columns = string.Join(", ", eventPropertyMap.Select(x => x.Value.Name));
-            var columnValues = string.Join(", ", eventPropertyMap.Select(x => $"{x.Value.Name} = @{x.Key.Name}"));
+            var parameterNames = string.Join(", ", eventPropertyMap.Select(x => $"@{x.Key.Name}"));
 
-            var updateSql = $@"
-UPDATE {projection.TableName}
-SET
-{updateFields}
-WHERE 
-{primaryKeyFields};";
-
-            var insertSql = $@"
-INSERT INTO {projection.TableName} (
+            var commandText = $@"
+INSERT OR REPLACE INTO {projection.TableName} (
 {columns}
 )
 VALUES (
-{columnValues}
+{parameterNames}
 )";
-
-            var commandText = string.IsNullOrEmpty(updateFields) ? 
-                                  $"{insertSql}; " : 
-                                  $"{updateSql} {insertSql} WHERE changes() = 0; ";
 
             var command = new SQLiteCommand(commandText);
             return command;
@@ -56,7 +52,7 @@ VALUES (
                 // TODO. We can do better than reflection here.
                 var value = propertyInfo.GetValue(@event);
 
-                var parameter = new SQLiteParameter(sqlColumnDefinition.DataType, value);
+                var parameter = new SQLiteParameter($"@{sqlColumnDefinition.Name}", sqlColumnDefinition.DataType) {Value = value};
                 command.Parameters.Add(parameter);
             }
         }
