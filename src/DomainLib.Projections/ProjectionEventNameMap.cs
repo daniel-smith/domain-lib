@@ -4,12 +4,7 @@ using System.Linq;
 
 namespace DomainLib.Projections
 {
-    public interface IProjectionEventNameMap
-    {
-        IEnumerable<Type> GetClrTypesForEventName(string eventName);
-    }
-
-    public class ProjectionEventNameMap : IProjectionEventNameMap
+    internal class ProjectionEventNameMap : IProjectionEventNameMap
     {
         private readonly Dictionary<string, IList<Type>> _eventNameMap = new Dictionary<string, IList<Type>>();
 

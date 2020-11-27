@@ -44,7 +44,7 @@ namespace Shopping.Infrastructure.Tests
 
             await WriteEventsToStream();
 
-            await Task.Delay(1000);
+            await Task.Delay(200);
         }
 
         private async Task WriteEventsToStream()
@@ -103,14 +103,14 @@ namespace Shopping.Infrastructure.Tests
             builder.Event<ItemAddedToShoppingCart>()
                    .FromName(ItemAddedToShoppingCart.EventName)
                    .ToSqlProjection(shoppingCartSummary)
-                   .PerformUpsert();
+                   .ExecutesUpsert();
 
             builder.Event<ItemRemovedFromShoppingCart>()
                    .FromName(ItemRemovedFromShoppingCart.EventName)
                    .ToSqlProjection(shoppingCartSummary)
-                   .PerformDelete();
+                   .ExecutesDelete();
         }
-
+        
         public ISqlDialect SqlDialect { get; } = new SqliteSqlDialect("Data Source=test.db; Version=3;Pooling=True;Max Pool Size=100;");
         public string TableName { get; } = "ShoppingCartSummary";
 

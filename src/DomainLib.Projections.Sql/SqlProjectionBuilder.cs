@@ -22,17 +22,17 @@ namespace DomainLib.Projections.Sql
             _builder.RegisterContextForEvent(_context);
         }
 
-        public SqlProjectionBuilder<TEvent, TSqlProjection> PerformUpsert()
+        public SqlProjectionBuilder<TEvent, TSqlProjection> ExecutesUpsert()
         {
             var eventPropertyMap = BuildEventPropertyMap();
-            var doUpsert = BuildExecuteNonQueryFunc(eventPropertyMap,
+            var executeUpsert = BuildExecuteNonQueryFunc(eventPropertyMap,
                                                     map => _dialect.BuildUpsertCommand(_sqlProjection, map));
-            _builder.RegisterEventProjectionFunc<TSqlProjection>(doUpsert);
+            _builder.RegisterEventProjectionFunc<TSqlProjection>(executeUpsert);
 
             return this;
         }
 
-        public SqlProjectionBuilder<TEvent, TSqlProjection> PerformDelete()
+        public SqlProjectionBuilder<TEvent, TSqlProjection> ExecutesDelete()
         {
             var eventPropertyMap = BuildEventPropertyMap();
 
@@ -48,15 +48,26 @@ namespace DomainLib.Projections.Sql
                                                     $"event, you will need to use a custom command instead");
             }
 
-            var doDelete = BuildExecuteNonQueryFunc(eventPropertyMap,
+            var executeDelete = BuildExecuteNonQueryFunc(eventPropertyMap,
                                                     map => _dialect.BuildDeleteCommand(_sqlProjection, map));
-            _builder.RegisterEventProjectionFunc<TSqlProjection>(doDelete);
+            _builder.RegisterEventProjectionFunc<TSqlProjection>(executeDelete);
 
             return this;
         }
 
-        public SqlProjectionBuilder<TEvent, TSqlProjection> PerformCustomCommand(Func<TEvent, string> sqlCommand)
+        public SqlProjectionBuilder<TEvent, TSqlProjection> ExecutesCustomSql(string sqlCommand)
         {
+            var eventPropertyMap = BuildEventPropertyMap();
+            var executeCustomSql = BuildExecuteNonQueryFunc(eventPropertyMap,
+                                                            map =>
+                                                            {
+                                                                var command = _context.Connection.CreateCommand();
+                                                                command.CommandText = sqlCommand;
+                                                                return command;
+                                                            });
+
+            _builder.RegisterEventProjectionFunc<TSqlProjection>(executeCustomSql);
+
             return this;
         }
 
@@ -85,7 +96,12 @@ namespace DomainLib.Projections.Sql
             return async @event =>
             {
                 _dialect.BindParameters(command, @event, sqlColumnDefinitions);
-                var rows = await command.ExecuteNonQueryAsync();
+                var rowsAffected = await command.ExecuteNonQueryAsync();
+
+                if (rowsAffected == 0)
+                {
+                    Console.WriteLine("No rows affected!");
+                }
             };
 
         }

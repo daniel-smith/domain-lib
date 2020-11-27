@@ -20,9 +20,11 @@ namespace DomainLib.Projections
 
         public EventProjectionBuilder<TEvent> FromNames(params string[] names)
         {
-            // TODO: As we can have multiple names that map to the same type on the read side
-            // The standard EventNameMap isn't quite going to work.
-            // We'll need a new implementation and maybe we should split up the interface IEventNameMap too
+            foreach (var name in names)
+            {
+                _builder.RegisterEventName<TEvent>(name);
+            }
+
             return this;
         }
 
