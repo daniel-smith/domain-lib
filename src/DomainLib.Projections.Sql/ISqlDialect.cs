@@ -11,5 +11,6 @@ namespace DomainLib.Projections.Sql
         public DbCommand BuildDeleteCommand(ISqlProjection projection, Dictionary<PropertyInfo, SqlColumnDefinition> eventPropertyMap);
         void BindParameters<TEvent>(DbCommand command, TEvent @event, Dictionary<PropertyInfo, SqlColumnDefinition> eventPropertyMap);
         DbConnection CreateConnection();
+        string BuildCreateTableSql(string tableName, IEnumerable<SqlColumnDefinition> columnDefinitions);
     }
 }

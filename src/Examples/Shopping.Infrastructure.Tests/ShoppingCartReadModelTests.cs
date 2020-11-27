@@ -103,15 +103,6 @@ namespace Shopping.Infrastructure.Tests
                    .PerformUpsert();
         }
 
-        // TODO: We can probably generate this from the column definitions.
-        // Maybe with an override if the user wants to customise things
-        public string CreateSchemaSql { get; } = @"
-CREATE TABLE IF NOT EXISTS ShoppingCartSummary (
-Id      TEXT  NOT NULL PRIMARY KEY,
-CartId  TEXT  NULL,
-Item    TEXT  NULL
-);
-";
         public string TableName { get; } = "ShoppingCartSummary";
 
         public SqlColumnDefinitions Columns { get; } = new()

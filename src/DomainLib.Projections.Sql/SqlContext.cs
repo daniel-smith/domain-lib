@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,12 +8,16 @@ namespace DomainLib.Projections.Sql
 {
     public class SqlContext : IContext
     {
+        private readonly ISqlDialect _dialect;
+        private readonly HashSet<ISqlProjection> _projections = new HashSet<ISqlProjection>();
+
         private readonly StringBuilder _schemaStringBuilder = new StringBuilder();
         private IDbTransaction _activeTransaction;
 
-        public SqlContext(DbConnection connection)
+        public SqlContext(ISqlDialect dialect)
         {
-            Connection = connection;
+            _dialect = dialect;
+            Connection = dialect.CreateConnection();
         }
 
         public DbConnection Connection { get; }
@@ -23,10 +28,7 @@ namespace DomainLib.Projections.Sql
             if (Connection.State == ConnectionState.Closed)
             {
                 await Connection.OpenAsync();
-
-                var createSchemaCommand = Connection.CreateCommand();
-                createSchemaCommand.CommandText = _schemaStringBuilder.ToString();
-                await createSchemaCommand.ExecuteNonQueryAsync();
+                await CreateSchema();
             }
         }
 
@@ -47,9 +49,26 @@ namespace DomainLib.Projections.Sql
             return Task.CompletedTask;
         }
 
-        public void AddSchema(string createSchemaSql)
+        public void RegisterProjection(ISqlProjection projection)
         {
-            _schemaStringBuilder.Append($"{createSchemaSql} ");
+            if (_projections.Add(projection))
+            {
+                var createTableSql = string.IsNullOrEmpty(projection.CustomCreateTableSql)
+                                         ? _dialect.BuildCreateTableSql(projection.TableName, projection.Columns.Values)
+                                         : projection.CustomCreateTableSql;
+
+                createTableSql = string.Concat(createTableSql, " ", projection.AfterCreateTableSql, " ");
+
+                _schemaStringBuilder.Append(createTableSql);
+            }
+        }
+
+        private async Task CreateSchema()
+        {
+            var createSchemaCommand = Connection.CreateCommand();
+            
+            createSchemaCommand.CommandText = _schemaStringBuilder.ToString();
+            await createSchemaCommand.ExecuteNonQueryAsync();
         }
     }
 }

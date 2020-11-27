@@ -9,11 +9,7 @@ namespace DomainLib.Projections.Sql
         public static SqlContext GetOrCreateContext(ISqlDialect dialect)
         {
             return SqlContexts.GetOrAdd(dialect,
-                                 d =>
-                                 {
-                                     var connection = d.CreateConnection();
-                                     return new SqlContext(connection);
-                                 });
+                                 d => new SqlContext(d));
         }
     }
 }

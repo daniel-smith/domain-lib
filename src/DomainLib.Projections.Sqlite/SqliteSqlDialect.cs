@@ -11,6 +11,7 @@ namespace DomainLib.Projections.Sqlite
 {
     public class SqliteSqlDialect : ISqlDialect
     {
+        private static readonly string SqlValueSeparator = $", {Environment.NewLine}";
         private readonly string _connectionString;
 
         public SqliteSqlDialect(string connectionString)
@@ -23,10 +24,33 @@ namespace DomainLib.Projections.Sqlite
             return new SQLiteConnection(_connectionString);
         }
 
+        public string BuildCreateTableSql(string tableName, IEnumerable<SqlColumnDefinition> columnDefinitions)
+        {
+            var columnStrings = new List<string>();
+
+            foreach (var column in columnDefinitions)
+            {
+                var nullableText = column.IsNullable ? "NULL" : "NOT NULL";
+                var primaryKeyText = column.IsInPrimaryKey ? "PRIMARY KEY" : string.Empty;
+                var columnString = string.Join(" ", column.Name, GetDataTypeName(column.DataType), nullableText, primaryKeyText);
+                columnStrings.Add(columnString);
+            }
+
+            var columnsText = string.Join(SqlValueSeparator, columnStrings);
+
+
+            var createTableSql = $@"
+CREATE TABLE IF NOT EXISTS {tableName} (
+{columnsText}
+);
+";
+           return createTableSql;
+        }
+
         public DbCommand BuildUpsertCommand(ISqlProjection projection, Dictionary<PropertyInfo, SqlColumnDefinition> eventPropertyMap)
         {
-            var columns = string.Join(", ", eventPropertyMap.Select(x => x.Value.Name));
-            var parameterNames = string.Join(", ", eventPropertyMap.Select(x => $"@{x.Key.Name}"));
+            var columns = string.Join(SqlValueSeparator, eventPropertyMap.Select(x => x.Value.Name));
+            var parameterNames = string.Join(SqlValueSeparator, eventPropertyMap.Select(x => $"@{x.Key.Name}"));
 
             var commandText = $@"
 INSERT OR REPLACE INTO {projection.TableName} (
@@ -34,7 +58,8 @@ INSERT OR REPLACE INTO {projection.TableName} (
 )
 VALUES (
 {parameterNames}
-)";
+);
+";
 
             var command = new SQLiteCommand(commandText);
             return command;
@@ -44,7 +69,7 @@ VALUES (
         {
             throw new NotImplementedException();
         }
-
+        
         public void BindParameters<TEvent>(DbCommand command, TEvent @event, Dictionary<PropertyInfo, SqlColumnDefinition> eventPropertyMap)
         {
             foreach (var (propertyInfo, sqlColumnDefinition) in eventPropertyMap)
@@ -54,6 +79,46 @@ VALUES (
 
                 var parameter = new SQLiteParameter($"@{sqlColumnDefinition.Name}", sqlColumnDefinition.DataType) {Value = value};
                 command.Parameters.Add(parameter);
+            }
+        }
+
+        private string GetDataTypeName(DbType dbType)
+        {
+            switch (dbType)
+            {
+                case DbType.Double:
+                case DbType.Single:
+                case DbType.VarNumeric:
+                    return "NUMERIC";
+                case DbType.Binary:
+                case DbType.Boolean:
+                case DbType.Byte:
+                case DbType.Int16:
+                case DbType.Int32:
+                case DbType.Int64:
+                case DbType.SByte:
+                case DbType.UInt16:
+                case DbType.UInt32:
+                case DbType.UInt64:
+                    return "INTEGER";
+                case DbType.Object:
+                    return "BLOB";
+                case DbType.AnsiString:
+                case DbType.AnsiStringFixedLength:
+                case DbType.Currency:
+                case DbType.Date:
+                case DbType.DateTime:
+                case DbType.DateTime2:
+                case DbType.DateTimeOffset:
+                case DbType.Decimal:
+                case DbType.Guid:
+                case DbType.String:
+                case DbType.StringFixedLength:
+                case DbType.Time:
+                case DbType.Xml:
+                    return "TEXT";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(dbType), dbType, null);
             }
         }
     }

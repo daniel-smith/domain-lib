@@ -2,7 +2,8 @@
 {
     public interface ISqlProjection
     {
-        string CreateSchemaSql { get; }
+        string CustomCreateTableSql => string.Empty;
+        string AfterCreateTableSql => string.Empty;
         string TableName { get; }
         SqlColumnDefinitions Columns { get; }
     }
