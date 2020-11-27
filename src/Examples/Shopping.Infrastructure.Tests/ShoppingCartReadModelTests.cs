@@ -17,6 +17,7 @@ using DomainLib.Persistence.EventStore;
 using EventStore.ClientAPI;
 using Shopping.Domain.Aggregates;
 using Shopping.Domain.Commands;
+using Enum = Google.Protobuf.WellKnownTypes.Enum;
 
 namespace Shopping.Infrastructure.Tests
 {
@@ -64,12 +65,16 @@ namespace Shopping.Infrastructure.Tests
             var (newState1, events1) = aggregateRegistry.CommandDispatcher.ImmutableDispatch(initialState, command1);
 
             // Execute the second command to the result of the first command.
-            var command2 = new AddItemToShoppingCart(shoppingCartId, Guid.NewGuid(), "Second Item");
+            var secondItemId = Guid.NewGuid();
+            var command2 = new AddItemToShoppingCart(shoppingCartId, secondItemId, "Second Item");
             var (newState2, events2) = aggregateRegistry.CommandDispatcher.ImmutableDispatch(newState1, command2);
 
             Assert.That(newState2.Id.HasValue, "Expected ShoppingCart ID to be set");
 
-            var eventsToPersist = events1.Concat(events2).ToList();
+            var command3 = new RemoveItemFromShoppingCart(secondItemId, shoppingCartId);
+            var (newState3, events3) = aggregateRegistry.CommandDispatcher.ImmutableDispatch(newState2, command3);
+
+            var eventsToPersist = events1.Concat(events2).Concat(events3).ToList();
 
             var serializer = new JsonEventSerializer(aggregateRegistry.EventNameMap);
             var eventsRepository = new EventStoreEventsRepository(EventStoreConnection, serializer);
@@ -80,7 +85,7 @@ namespace Shopping.Infrastructure.Tests
                                                                             aggregateRegistry.EventDispatcher,
                                                                             aggregateRegistry.AggregateMetadataMap);
 
-            var nextEventVersion = await aggregateRepository.SaveAggregate<ShoppingCartState>(newState2.Id.ToString(),
+            var nextEventVersion = await aggregateRepository.SaveAggregate<ShoppingCartState>(newState3.Id.ToString(),
                                                                                               ExpectedVersion.NoStream,
                                                                                               eventsToPersist);
             var expectedNextEventVersion = eventsToPersist.Count - 1;
@@ -94,15 +99,19 @@ namespace Shopping.Infrastructure.Tests
         public static void Register(ProjectionRegistryBuilder builder)
         {
             var shoppingCartSummary = new ShoppingCartSummarySqlProjection();
-            var sqliteDialect = new SqliteSqlDialect("Data Source=test.db; Version=3;Pooling=True;Max Pool Size=100;");
-            
+
             builder.Event<ItemAddedToShoppingCart>()
                    .FromName(ItemAddedToShoppingCart.EventName)
                    .ToSqlProjection(shoppingCartSummary)
-                   .UsingDialect(sqliteDialect)
                    .PerformUpsert();
+
+            builder.Event<ItemRemovedFromShoppingCart>()
+                   .FromName(ItemRemovedFromShoppingCart.EventName)
+                   .ToSqlProjection(shoppingCartSummary)
+                   .PerformDelete();
         }
 
+        public ISqlDialect SqlDialect { get; } = new SqliteSqlDialect("Data Source=test.db; Version=3;Pooling=True;Max Pool Size=100;");
         public string TableName { get; } = "ShoppingCartSummary";
 
         public SqlColumnDefinitions Columns { get; } = new()

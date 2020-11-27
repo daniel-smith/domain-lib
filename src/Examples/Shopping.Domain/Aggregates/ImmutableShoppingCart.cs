@@ -2,6 +2,7 @@ using Shopping.Domain.Commands;
 using Shopping.Domain.Events;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DomainLib.Aggregates;
 using DomainLib.Aggregates.Registration;
 
@@ -60,6 +61,9 @@ namespace Shopping.Domain.Aggregates
                 aggregate.Command<AddItemToShoppingCart>()
                          .RoutesTo(Execute);
 
+                aggregate.Command<RemoveItemFromShoppingCart>()
+                         .RoutesTo(Execute);
+
                 aggregate.Event<ShoppingCartCreated>()
                          .RoutesTo(Apply)
                          .HasName(ShoppingCartCreated.EventName);
@@ -67,6 +71,10 @@ namespace Shopping.Domain.Aggregates
                 aggregate.Event<ItemAddedToShoppingCart>()
                          .RoutesTo(Apply)
                          .HasName(ItemAddedToShoppingCart.EventName);
+
+                aggregate.Event<ItemRemovedFromShoppingCart>()
+                         .RoutesTo(Apply)
+                         .HasName(ItemRemovedFromShoppingCart.EventName);
             });
         }
 
@@ -82,6 +90,19 @@ namespace Shopping.Domain.Aggregates
             yield return new ItemAddedToShoppingCart(command.Id, command.CartId, command.Item);
         }
 
+        private static IEnumerable<IDomainEvent> Execute(Func<ShoppingCartState> getState,
+                                                         RemoveItemFromShoppingCart command)
+        {
+            var state = getState();
+
+            if (state.Items.All(i => i.Id != command.Id))
+            {
+                throw new InvalidOperationException("Item not in shopping cart");
+            }
+
+            yield return new ItemRemovedFromShoppingCart(command.Id, command.CartId);
+        }
+
         private static ShoppingCartState Apply(ShoppingCartState currentState, ShoppingCartCreated @event)
         {
             return new ShoppingCartState(@event.Id);
@@ -95,6 +116,17 @@ namespace Shopping.Domain.Aggregates
             }
 
             var newItems = new List<ShoppingCartItem>(currentState.Items) {new ShoppingCartItem(@event.Id, @event.Item)};
+            return new ShoppingCartState(currentState.Id, newItems);
+        }
+
+        private static ShoppingCartState Apply(ShoppingCartState currentState, ItemRemovedFromShoppingCart @event)
+        {
+            if (currentState.Id != @event.CartId)
+            {
+                throw new InvalidOperationException("Attempted to remove an item for a shopping cart with a different ID");
+            }
+
+            var newItems = currentState.Items.Where(i => i.Id != @event.Id).ToList();
             return new ShoppingCartState(currentState.Id, newItems);
         }
     }

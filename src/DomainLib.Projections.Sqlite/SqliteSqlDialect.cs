@@ -12,6 +12,7 @@ namespace DomainLib.Projections.Sqlite
     public class SqliteSqlDialect : ISqlDialect
     {
         private static readonly string SqlValueSeparator = $", {Environment.NewLine}";
+        private static readonly string SqlPredicateSeparator = $" AND{Environment.NewLine}";
         private readonly string _connectionString;
 
         public SqliteSqlDialect(string connectionString)
@@ -47,10 +48,10 @@ CREATE TABLE IF NOT EXISTS {tableName} (
            return createTableSql;
         }
 
-        public DbCommand BuildUpsertCommand(ISqlProjection projection, Dictionary<PropertyInfo, SqlColumnDefinition> eventPropertyMap)
+        public DbCommand BuildUpsertCommand(ISqlProjection projection, EventSqlColumnDefinitions eventPropertyMap)
         {
             var columns = string.Join(SqlValueSeparator, eventPropertyMap.Select(x => x.Value.Name));
-            var parameterNames = string.Join(SqlValueSeparator, eventPropertyMap.Select(x => $"@{x.Key.Name}"));
+            var parameterNames = string.Join(SqlValueSeparator, eventPropertyMap.Select(x => $"@{x.Value.Name}"));
 
             var commandText = $@"
 INSERT OR REPLACE INTO {projection.TableName} (
@@ -65,12 +66,24 @@ VALUES (
             return command;
         }
 
-        public DbCommand BuildDeleteCommand(ISqlProjection projection, Dictionary<PropertyInfo, SqlColumnDefinition> eventPropertyMap)
+        public DbCommand BuildDeleteCommand(ISqlProjection projection, EventSqlColumnDefinitions eventPropertyMap)
         {
-            throw new NotImplementedException();
+            var primaryKeyColumns = eventPropertyMap.Where(x => x.Value.IsInPrimaryKey)
+                                                    .Select(x => $"{x.Value.Name} = @{x.Value.Name}");
+
+            var primaryKeysSql = string.Join(SqlPredicateSeparator, primaryKeyColumns);
+
+            var commandText = $@"
+DELETE FROM {projection.TableName}
+WHERE
+{primaryKeysSql}
+;
+";
+            var command = new SQLiteCommand(commandText);
+            return command;
         }
         
-        public void BindParameters<TEvent>(DbCommand command, TEvent @event, Dictionary<PropertyInfo, SqlColumnDefinition> eventPropertyMap)
+        public void BindParameters<TEvent>(DbCommand command, TEvent @event, EventSqlColumnDefinitions eventPropertyMap)
         {
             foreach (var (propertyInfo, sqlColumnDefinition) in eventPropertyMap)
             {
@@ -82,7 +95,7 @@ VALUES (
             }
         }
 
-        private string GetDataTypeName(DbType dbType)
+        private static string GetDataTypeName(DbType dbType)
         {
             switch (dbType)
             {

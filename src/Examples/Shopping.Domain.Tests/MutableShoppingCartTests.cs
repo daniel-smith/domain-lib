@@ -20,8 +20,10 @@ namespace Shopping.Domain.Tests
             aggregateRegistryBuilder.Register<MutableShoppingCart>(reg =>
             {
                 reg.Command<AddItemToShoppingCart>().RoutesTo((agg, cmd) => agg.Execute(cmd));
+                reg.Command<RemoveItemFromShoppingCart>().RoutesTo((agg, cmd) => agg.Execute(cmd));
                 reg.Event<ShoppingCartCreated>().RoutesTo((agg, evt) => agg.Apply(evt));
                 reg.Event<ItemAddedToShoppingCart>().RoutesTo((agg, evt) => agg.Apply(evt));
+                reg.Event<ItemRemovedFromShoppingCart>().RoutesTo((agg, evt) => agg.Apply(evt));
             });
 
             var aggregateRegistry = aggregateRegistryBuilder.Build();
