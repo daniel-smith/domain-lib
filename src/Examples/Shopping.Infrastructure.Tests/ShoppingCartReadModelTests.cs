@@ -107,9 +107,9 @@ namespace Shopping.Infrastructure.Tests
 
         public SqlColumnDefinitions Columns { get; } = new()
         {
-            {nameof(ItemAddedToShoppingCart.Id), new SqlColumnDefinition("Id", DbType.String, true, false)},
-            {nameof(ItemAddedToShoppingCart.CartId), new SqlColumnDefinition("CartId", DbType.String, false, true)},
-            {nameof(ItemAddedToShoppingCart.Item), new SqlColumnDefinition("Item", DbType.String, false, true)},
+            {nameof(ItemAddedToShoppingCart.Id), new SqlColumnDefinitionBuilder().Name("Id").Type(DbType.String).PrimaryKey().Build()},
+            {nameof(ItemAddedToShoppingCart.CartId), new SqlColumnDefinitionBuilder().Name("CartId").Type(DbType.String).Build() },
+            {nameof(ItemAddedToShoppingCart.Item), new SqlColumnDefinitionBuilder().Name("Item").Type(DbType.String).Build() },
         };
     }
 }

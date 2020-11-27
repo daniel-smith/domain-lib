@@ -5,7 +5,7 @@ namespace DomainLib.Projections.Sql
 {
     public class SqlColumnDefinition
     {
-        public SqlColumnDefinition(string name, DbType dataType, bool isInPrimaryKey, bool isNullable)
+        internal SqlColumnDefinition(string name, DbType dataType, bool isInPrimaryKey, bool isNullable)
         {
             if (isInPrimaryKey && isNullable)
             {
