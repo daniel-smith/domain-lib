@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using DomainLib.Serialization;
 using EventStore.ClientAPI;
@@ -10,13 +11,15 @@ namespace DomainLib.Projections.EventStore
     {
         private readonly IEventStoreConnection _connection;
         private readonly IEventSerializer _serializer;
+        private readonly IProjectionEventNameMap _projectionEventNameMap;
         private Func<EventNotification<TEventBase>, Task> _onEvent;
         private EventStoreSubscription _subscription;
 
-        public EventStoreEventPublisher(IEventStoreConnection connection, IEventSerializer serializer)
+        public EventStoreEventPublisher(IEventStoreConnection connection, IEventSerializer serializer, IProjectionEventNameMap projectionEventNameMap)
         {
             _connection = connection;
             _serializer = serializer;
+            _projectionEventNameMap = projectionEventNameMap;
         }
 
         public async Task StartAsync(Func<EventNotification<TEventBase>, Task> onEvent)
@@ -36,10 +39,17 @@ namespace DomainLib.Projections.EventStore
 
         private async Task HandleEvent(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
         {
-            var @event = _serializer.DeserializeEvent<TEventBase>(resolvedEvent.Event.Data, resolvedEvent.Event.EventType);
-            var notification = EventNotification.FromEvent(@event);
+            var tasks = new List<Task>();
 
-             await _onEvent(notification);
+            foreach (var type in _projectionEventNameMap.GetClrTypesForEventName(resolvedEvent.Event.EventType))
+            {
+                var @event = _serializer.DeserializeEvent<TEventBase>(resolvedEvent.Event.Data, resolvedEvent.Event.EventType, type);
+                var notification = EventNotification.FromEvent(@event);
+
+                tasks.Add(_onEvent(notification));
+            }
+
+            await Task.WhenAll(tasks);
         }
 
         private void OnSubscriptionDropped(EventStoreSubscription subscription, SubscriptionDropReason reason, Exception exception)

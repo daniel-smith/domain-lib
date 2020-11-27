@@ -33,7 +33,7 @@ namespace Shopping.Domain.Tests
             
             // Execute the first command.
             var shoppingCartId = Guid.NewGuid(); // This could come from a sequence, or could be the customer's ID.
-            var command1 = new AddItemToShoppingCart(shoppingCartId, "First Item");
+            var command1 = new AddItemToShoppingCart(shoppingCartId, Guid.NewGuid(), "First Item");
             var events1 = commandDispatcher.Dispatch(shoppingCart, command1);
             
             // Check the updated aggregate root state.
@@ -47,7 +47,7 @@ namespace Shopping.Domain.Tests
             Assert.That(events1[1], Is.TypeOf<ItemAddedToShoppingCart>());
 
             // Execute the second command to the result of the first command.
-            var command2 = new AddItemToShoppingCart(shoppingCartId, "Second Item");
+            var command2 = new AddItemToShoppingCart(shoppingCartId, Guid.NewGuid(), "Second Item");
             var events2  = commandDispatcher.Dispatch(shoppingCart, command2);
             
             // Check the updated aggregate root state.

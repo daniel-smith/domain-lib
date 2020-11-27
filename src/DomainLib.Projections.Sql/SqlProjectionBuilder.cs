@@ -25,7 +25,7 @@ namespace DomainLib.Projections.Sql
             _dialect = dialect;
             _context = SqlContextProvider.GetOrCreateContext(dialect);
             _context.AddSchema(_sqlProjection.CreateSchemaSql);
-            _builder.RegisterContextForEvent<TEvent>(_context);
+            _builder.RegisterContextForEvent(_context);
             return this;
         }
 

@@ -43,6 +43,7 @@ namespace DomainLib.Projections.Sql
         public Task OnAfterHandleEvent()
         {
             _activeTransaction.Commit();
+            _activeTransaction = null;
             return Task.CompletedTask;
         }
 

@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using DomainLib.Aggregates;
 
 namespace DomainLib.Projections
 {
     public class ProjectionRegistryBuilder
     {
         private readonly EventProjectionMap _eventProjectionMap = new EventProjectionMap();
-        private readonly EventNameMap _eventNameMap = new EventNameMap();
-        private readonly Dictionary<Type, IContext> _eventContextMap = new Dictionary<Type, IContext>();
+        private readonly ProjectionEventNameMap _eventNameMap = new ProjectionEventNameMap();
+        private readonly EventContextMap _eventContextMap = new EventContextMap();
 
         public EventProjectionBuilder<TEvent> Event<TEvent>()
         {
@@ -23,12 +21,12 @@ namespace DomainLib.Projections
 
         internal void RegisterEventName<TEvent>(string name)
         {
-            _eventNameMap.RegisterEvent<TEvent>(name);
+            _eventNameMap.RegisterTypeForEventName<TEvent>(name);
         }
 
         internal void RegisterContextForEvent<TEvent>(IContext context)
         {
-            _eventContextMap[typeof(TEvent)] = context;
+            _eventContextMap.RegisterContextForEvent<TEvent>(context);
         }
 
         public ProjectionRegistry Build()

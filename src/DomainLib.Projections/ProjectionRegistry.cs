@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using DomainLib.Aggregates;
-
-namespace DomainLib.Projections
+﻿namespace DomainLib.Projections
 {
     public class ProjectionRegistry
     {
-        public ProjectionRegistry(EventProjectionMap eventProjectionMap, Dictionary<Type, IContext> eventContextMap, IEventNameMap eventNameMap)
+        public ProjectionRegistry(EventProjectionMap eventProjectionMap, EventContextMap eventContextMap, IProjectionEventNameMap eventNameMap)
         {
             EventProjectionMap = eventProjectionMap;
             EventContextMap = eventContextMap;
@@ -14,7 +10,7 @@ namespace DomainLib.Projections
         }
 
         public EventProjectionMap EventProjectionMap { get; }
-        public IEventNameMap EventNameMap { get; }
-        public Dictionary<Type, IContext> EventContextMap { get; }
+        public IProjectionEventNameMap EventNameMap { get; }
+        public EventContextMap EventContextMap { get; }
     }
 }

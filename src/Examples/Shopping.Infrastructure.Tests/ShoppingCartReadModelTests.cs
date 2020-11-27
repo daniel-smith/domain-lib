@@ -10,6 +10,7 @@ using Shopping.Domain.Events;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using DomainLib.Aggregates;
 using DomainLib.Aggregates.Registration;
 using DomainLib.Persistence;
 using DomainLib.Persistence.EventStore;
@@ -31,8 +32,10 @@ namespace Shopping.Infrastructure.Tests
 
             var registry = projectionRegistryBuilder.Build();
 
-            var serializer = new JsonEventSerializer(registry.EventNameMap);
-            var eventPublisher = new EventStoreEventPublisher<IDomainEvent>(EventStoreConnection, serializer);
+            // TODO: EventNameMap isn't actually used here as we deserialize differently on the read side.
+            // We need to fix this so that we don't have to pass an empty instance in
+            var serializer = new JsonEventSerializer(new EventNameMap());
+            var eventPublisher = new EventStoreEventPublisher<IDomainEvent>(EventStoreConnection, serializer, registry.EventNameMap);
 
             var eventStream = new EventStream<IDomainEvent>(eventPublisher, registry.EventProjectionMap, registry.EventContextMap);
 
@@ -92,12 +95,7 @@ namespace Shopping.Infrastructure.Tests
         {
             var shoppingCartSummary = new ShoppingCartSummarySqlProjection();
             var sqliteDialect = new SqliteSqlDialect("Data Source=test.db; Version=3;Pooling=True;Max Pool Size=100;");
-
-            // We have to do this at the moment as we try to resolve all events.
-            // TODO: Ignore the events we don't care about in the read model
-            builder.Event<ShoppingCartCreated>()
-                   .FromName(ShoppingCartCreated.EventName);
-
+            
             builder.Event<ItemAddedToShoppingCart>()
                    .FromName(ItemAddedToShoppingCart.EventName)
                    .ToSqlProjection(shoppingCartSummary)

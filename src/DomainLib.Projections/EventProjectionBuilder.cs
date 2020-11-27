@@ -31,7 +31,7 @@ namespace DomainLib.Projections
             _builder.RegisterEventProjectionFunc<TEvent, TProjection>(projectEvent);
         }
 
-        public void RegisterContextForEvent<TEvent>(IContext context)
+        public void RegisterContextForEvent(IContext context)
         {
             _builder.RegisterContextForEvent<TEvent>(context);
         }

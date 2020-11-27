@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DomainLib.Projections
@@ -8,9 +8,9 @@ namespace DomainLib.Projections
     {
         private readonly IEventPublisher<TEventBase> _publisher;
         private readonly EventProjectionMap _projectionMap;
-        private readonly Dictionary<Type, IContext> _eventContextMap;
+        private readonly EventContextMap _eventContextMap;
 
-        public EventStream(IEventPublisher<TEventBase> publisher, EventProjectionMap projectionMap, Dictionary<Type, IContext> eventContextMap)
+        public EventStream(IEventPublisher<TEventBase> publisher, EventProjectionMap projectionMap, EventContextMap eventContextMap)
         {
             _publisher = publisher;
             _projectionMap = projectionMap;
@@ -19,8 +19,7 @@ namespace DomainLib.Projections
 
         public async Task StartAsync()
         {
-            // TODO: Right now, this is going to iterate over all events in the map, even if the context is the same
-            foreach (var (key, context) in _eventContextMap)
+            foreach (var context in _eventContextMap.GetAllContexts())
             {
                 await context.OnSubscribing();
             }
@@ -32,21 +31,34 @@ namespace DomainLib.Projections
         {
             if (notification.NotificationKind == EventNotificationKind.Event)
             {
-                var eventType = notification.Event.GetType();
-                if (_projectionMap.TryGetValue(eventType, out var projections))
-                {
-                   //TODO: Investigate replacing this with an async enumerator
-                   var tasks = new List<Task>();
-
-                    foreach (var (_, executeAsync) in projections)
-                    {
-                        tasks.Add(executeAsync(notification.Event));
-                    }
-
-                    await Task.WhenAll(tasks);
-                }
+                await HandleEventAsync(notification.Event);
             }
+        }
+
+        private async Task HandleEventAsync(TEventBase @event)
+        {
+            var eventType = @event.GetType();
+            var contextsForEvent = _eventContextMap.GetContextsForEventType(eventType);
+
+            var beforeEventActions = contextsForEvent.Select(c => c.OnBeforeHandleEvent());
+            await Task.WhenAll(beforeEventActions);
+
             
+            if (_projectionMap.TryGetValue(eventType, out var projections))
+            {
+                //TODO: Investigate replacing this with an async enumerator
+                var tasks = new List<Task>();
+
+                foreach (var (_, executeAsync) in projections)
+                {
+                    tasks.Add(executeAsync(@event));
+                }
+
+                await Task.WhenAll(tasks);
+            }
+
+            var afterEventActions = contextsForEvent.Select(c => c.OnAfterHandleEvent());
+            await Task.WhenAll(afterEventActions);
         }
     }
 }
