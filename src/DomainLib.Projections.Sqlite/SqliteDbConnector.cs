@@ -5,17 +5,16 @@ using System.Data;
 using System.Data.Common;
 using System.Data.SQLite;
 using System.Linq;
-using System.Reflection;
 
 namespace DomainLib.Projections.Sqlite
 {
-    public class SqliteSqlDialect : ISqlDialect
+    public class SqliteDbConnector : IDbConnector
     {
         private static readonly string SqlValueSeparator = $", {Environment.NewLine}";
         private static readonly string SqlPredicateSeparator = $" AND{Environment.NewLine}";
         private readonly string _connectionString;
 
-        public SqliteSqlDialect(string connectionString)
+        public SqliteDbConnector(string connectionString)
         {
             _connectionString = connectionString;
         }

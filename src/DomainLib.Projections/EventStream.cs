@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -19,19 +20,31 @@ namespace DomainLib.Projections
 
         public async Task StartAsync()
         {
-            foreach (var context in _eventContextMap.GetAllContexts())
-            {
-                await context.OnSubscribing();
-            }
+            await ForAllContexts(c => c.OnSubscribing());
 
             await _publisher.StartAsync(HandleEventNotificationAsync);
         }
 
+        private async Task ForAllContexts(Func<IContext, Task> contextAction)
+        {
+            foreach (var context in _eventContextMap.GetAllContexts())
+            {
+                await contextAction(context); 
+            }
+        }
+
         private async Task HandleEventNotificationAsync(EventNotification<TEventBase> notification)
         {
-            if (notification.NotificationKind == EventNotificationKind.Event)
+            switch (notification.NotificationKind)
             {
-                await HandleEventAsync(notification.Event);
+                case EventNotificationKind.Event:
+                    await HandleEventAsync(notification.Event);
+                    break;
+                case EventNotificationKind.CaughtUpNotification:
+                    await ForAllContexts(c => c.OnCaughtUp());
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 

@@ -2,7 +2,7 @@
 {
     public interface ISqlProjection
     {
-        ISqlDialect SqlDialect { get; }
+        IDbConnector DbConnector { get; }
         string CustomCreateTableSql => string.Empty;
         string AfterCreateTableSql => string.Empty;
         string TableName { get; }

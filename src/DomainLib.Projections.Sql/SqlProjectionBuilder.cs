@@ -9,15 +9,15 @@ namespace DomainLib.Projections.Sql
     {
         private readonly EventProjectionBuilder<TEvent> _builder;
         private readonly TSqlProjection _sqlProjection;
-        private readonly ISqlDialect _dialect;
+        private readonly IDbConnector _connector;
         private readonly SqlContext _context;
 
         public SqlProjectionBuilder(EventProjectionBuilder<TEvent> builder, TSqlProjection sqlProjection) 
         {
             _builder = builder;
             _sqlProjection = sqlProjection;
-            _dialect = sqlProjection.SqlDialect;
-            _context = SqlContextProvider.GetOrCreateContext(sqlProjection.SqlDialect);
+            _connector = sqlProjection.DbConnector;
+            _context = SqlContextProvider.GetOrCreateContext(sqlProjection.DbConnector);
             _context.RegisterProjection(_sqlProjection);
             _builder.RegisterContextForEvent(_context);
         }
@@ -26,7 +26,7 @@ namespace DomainLib.Projections.Sql
         {
             var eventPropertyMap = BuildEventPropertyMap();
             var executeUpsert = BuildExecuteNonQueryFunc(eventPropertyMap,
-                                                    map => _dialect.BuildUpsertCommand(_sqlProjection, map));
+                                                    map => _connector.BuildUpsertCommand(_sqlProjection, map));
             _builder.RegisterEventProjectionFunc<TSqlProjection>(executeUpsert);
 
             return this;
@@ -49,7 +49,7 @@ namespace DomainLib.Projections.Sql
             }
 
             var executeDelete = BuildExecuteNonQueryFunc(eventPropertyMap,
-                                                    map => _dialect.BuildDeleteCommand(_sqlProjection, map));
+                                                    map => _connector.BuildDeleteCommand(_sqlProjection, map));
             _builder.RegisterEventProjectionFunc<TSqlProjection>(executeDelete);
 
             return this;
@@ -95,7 +95,7 @@ namespace DomainLib.Projections.Sql
 
             return async @event =>
             {
-                _dialect.BindParameters(command, @event, sqlColumnDefinitions);
+                _connector.BindParameters(command, @event, sqlColumnDefinitions);
                 var rowsAffected = await command.ExecuteNonQueryAsync();
 
                 if (rowsAffected == 0)

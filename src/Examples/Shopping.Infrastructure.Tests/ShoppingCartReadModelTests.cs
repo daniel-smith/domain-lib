@@ -39,10 +39,10 @@ namespace Shopping.Infrastructure.Tests
             var eventPublisher = new EventStoreEventPublisher<IDomainEvent>(EventStoreConnection, serializer, registry.EventNameMap);
 
             var eventStream = new EventStream<IDomainEvent>(eventPublisher, registry.EventProjectionMap, registry.EventContextMap);
+            await WriteEventsToStream();
 
             await eventStream.StartAsync();
 
-            await WriteEventsToStream();
 
             await Task.Delay(200);
         }
@@ -111,7 +111,7 @@ namespace Shopping.Infrastructure.Tests
                    .ExecutesDelete();
         }
         
-        public ISqlDialect SqlDialect { get; } = new SqliteSqlDialect("Data Source=test.db; Version=3;Pooling=True;Max Pool Size=100;");
+        public IDbConnector DbConnector { get; } = new SqliteDbConnector("Data Source=test.db; Version=3;Pooling=True;Max Pool Size=100;");
         public string TableName { get; } = "ShoppingCartSummary";
 
         public SqlColumnDefinitions Columns { get; } = new()

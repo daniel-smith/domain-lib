@@ -4,11 +4,11 @@ namespace DomainLib.Projections.Sql
 {
     public class SqlContextProvider
     {
-        private static readonly ConcurrentDictionary<ISqlDialect, SqlContext> SqlContexts = new ConcurrentDictionary<ISqlDialect, SqlContext>();
+        private static readonly ConcurrentDictionary<IDbConnector, SqlContext> SqlContexts = new ConcurrentDictionary<IDbConnector, SqlContext>();
 
-        public static SqlContext GetOrCreateContext(ISqlDialect dialect)
+        public static SqlContext GetOrCreateContext(IDbConnector connector)
         {
-            return SqlContexts.GetOrAdd(dialect,
+            return SqlContexts.GetOrAdd(connector,
                                  d => new SqlContext(d));
         }
     }

@@ -13,7 +13,7 @@ namespace DomainLib.Projections.EventStore
         private readonly IEventSerializer _serializer;
         private readonly IProjectionEventNameMap _projectionEventNameMap;
         private Func<EventNotification<TEventBase>, Task> _onEvent;
-        private EventStoreSubscription _subscription;
+        private EventStoreCatchUpSubscription _subscription;
 
         public EventStoreEventPublisher(IEventStoreConnection connection, IEventSerializer serializer, IProjectionEventNameMap projectionEventNameMap)
         {
@@ -22,22 +22,32 @@ namespace DomainLib.Projections.EventStore
             _projectionEventNameMap = projectionEventNameMap;
         }
 
-        public async Task StartAsync(Func<EventNotification<TEventBase>, Task> onEvent)
+        public  Task StartAsync(Func<EventNotification<TEventBase>, Task> onEvent)
         {
             _onEvent = onEvent;
-            _subscription = await _connection.FilteredSubscribeToAllAsync(false,
-                                                                          Filter.ExcludeSystemEvents,
-                                                                          HandleEvent,
-                                                                          OnSubscriptionDropped,
-                                                                          new UserCredentials("admin", "changeit"));
+            var settings = CatchUpSubscriptionFilteredSettings.Default;
+            _subscription = _connection.FilteredSubscribeToAllFrom(Position.Start,
+                                                                   Filter.ExcludeSystemEvents,
+                                                                   settings,
+                                                                   HandleEvent,
+                                                                   OnLiveProcessingStarted,
+                                                                   OnSubscriptionDropped,
+                                                                   new UserCredentials("admin", "changeit"));
+
+            return Task.CompletedTask;
         }
-        
+
         public void Stop()
         {
             Dispose();
         }
 
-        private async Task HandleEvent(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
+        public void Dispose()
+        {
+            _subscription.Stop();
+        }
+
+        private async Task HandleEvent(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
         {
             var tasks = new List<Task>();
 
@@ -52,14 +62,14 @@ namespace DomainLib.Projections.EventStore
             await Task.WhenAll(tasks);
         }
 
-        private void OnSubscriptionDropped(EventStoreSubscription subscription, SubscriptionDropReason reason, Exception exception)
+        private void OnLiveProcessingStarted(EventStoreCatchUpSubscription arg1)
         {
-            // TODO: Need to handle this
+            _onEvent(EventNotification.CaughtUp<TEventBase>());
         }
 
-        public void Dispose()
+        private void OnSubscriptionDropped(EventStoreCatchUpSubscription subscription, SubscriptionDropReason reason, Exception exception)
         {
-            _subscription.Dispose();
+            // TODO: Need to handle this
         }
     }
 }
