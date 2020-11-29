@@ -1,6 +1,6 @@
 ﻿namespace DomainLib.Projections.Sql
 {
-    public class SqlContextSettings
+    public sealed class SqlContextSettings
     {
         public static SqlContextSettings Default { get; } = new SqlContextSettings(true, true);
 

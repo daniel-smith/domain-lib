@@ -3,7 +3,7 @@ using System.Data;
 
 namespace DomainLib.Projections.Sql
 {
-    public class SqlColumnDefinition
+    public sealed class SqlColumnDefinition
     {
         internal SqlColumnDefinition(string name, DbType dataType, bool isInPrimaryKey, bool isNullable)
         {

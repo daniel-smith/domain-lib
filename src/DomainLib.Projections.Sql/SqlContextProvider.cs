@@ -2,7 +2,7 @@
 
 namespace DomainLib.Projections.Sql
 {
-    public class SqlContextProvider
+    public static class SqlContextProvider
     {
         private static readonly ConcurrentDictionary<IDbConnector, SqlContext> SqlContexts = new ConcurrentDictionary<IDbConnector, SqlContext>();
 

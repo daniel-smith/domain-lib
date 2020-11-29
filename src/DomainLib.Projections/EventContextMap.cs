@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 
 namespace DomainLib.Projections
 {
-    public class EventContextMap
+    public sealed class EventContextMap
     {
         private readonly HashSet<IContext> _allContexts = new HashSet<IContext>();
         private readonly Dictionary<Type, List<IContext>> _eventContextMap = new Dictionary<Type, List<IContext>>();
@@ -35,6 +35,7 @@ namespace DomainLib.Projections
 
         public IReadOnlyCollection<IContext> GetContextsForEventType(Type eventType)
         {
+            if (eventType == null) throw new ArgumentNullException(nameof(eventType));
             if (_eventContextMap.TryGetValue(eventType, out var contexts))
             {
                 return contexts;

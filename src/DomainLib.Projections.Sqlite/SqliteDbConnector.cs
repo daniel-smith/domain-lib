@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace DomainLib.Projections.Sqlite
 {
-    public class SqliteDbConnector : IDbConnector
+    public sealed class SqliteDbConnector : IDbConnector
     {
         private static readonly string SqlValueSeparator = $", {Environment.NewLine}";
         private static readonly string SqlPredicateSeparator = $" AND{Environment.NewLine}";
@@ -16,6 +16,11 @@ namespace DomainLib.Projections.Sqlite
 
         public SqliteDbConnector(string connectionString)
         {
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(connectionString));
+            }
+
             _connectionString = connectionString;
         }
 

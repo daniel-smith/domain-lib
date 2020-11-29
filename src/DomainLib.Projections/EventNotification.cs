@@ -1,4 +1,6 @@
-﻿namespace DomainLib.Projections
+﻿using System;
+
+namespace DomainLib.Projections
 {
     public readonly struct EventNotification<TEventBase>
     {
@@ -21,6 +23,7 @@
 
         public static EventNotification<TEventBase> FromEvent<TEventBase>(TEventBase @event)
         {
+            if (@event == null) throw new ArgumentNullException(nameof(@event));
             return new EventNotification<TEventBase>(EventNotificationKind.Event, @event);
         }
     }

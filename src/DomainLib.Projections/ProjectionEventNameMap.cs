@@ -4,12 +4,13 @@ using System.Linq;
 
 namespace DomainLib.Projections
 {
-    internal class ProjectionEventNameMap : IProjectionEventNameMap
+    internal sealed class ProjectionEventNameMap : IProjectionEventNameMap
     {
         private readonly Dictionary<string, IList<Type>> _eventNameMap = new Dictionary<string, IList<Type>>();
 
         public IEnumerable<Type> GetClrTypesForEventName(string eventName)
         {
+            if (eventName == null) throw new ArgumentNullException(nameof(eventName));
             return _eventNameMap.TryGetValue(eventName, out var types) ? 
                        types : 
                        Enumerable.Empty<Type>();
@@ -17,6 +18,7 @@ namespace DomainLib.Projections
 
         public void RegisterTypeForEventName<TEvent>(string eventName)
         {
+            if (eventName == null) throw new ArgumentNullException(nameof(eventName));
             if (_eventNameMap.TryGetValue(eventName, out var types))
             {
                 types.Add(typeof(TEvent));

@@ -3,7 +3,7 @@ using System.Data;
 
 namespace DomainLib.Projections.Sql
 {
-    public class SqlColumnDefinitionBuilder
+    public sealed class SqlColumnDefinitionBuilder
     {
         private string _name;
         private DbType _dataType = DbType.String;
@@ -12,7 +12,7 @@ namespace DomainLib.Projections.Sql
 
         public SqlColumnDefinitionBuilder Name(string name)
         {
-            _name = name;
+            _name = name ?? throw new ArgumentNullException(nameof(name));
             return this;
         }
 

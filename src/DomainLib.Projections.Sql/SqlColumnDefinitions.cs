@@ -2,8 +2,7 @@
 
 namespace DomainLib.Projections.Sql
 {
-    public class SqlColumnDefinitions : Dictionary<string, SqlColumnDefinition>
+    public sealed class SqlColumnDefinitions : Dictionary<string, SqlColumnDefinition>
     {
-
     }
 }

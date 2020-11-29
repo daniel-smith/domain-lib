@@ -17,14 +17,14 @@ namespace DomainLib.Projections.EventStore
 
         public EventStoreEventPublisher(IEventStoreConnection connection, IEventSerializer serializer, IProjectionEventNameMap projectionEventNameMap)
         {
-            _connection = connection;
-            _serializer = serializer;
-            _projectionEventNameMap = projectionEventNameMap;
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+            _projectionEventNameMap = projectionEventNameMap ?? throw new ArgumentNullException(nameof(projectionEventNameMap));
         }
 
-        public  Task StartAsync(Func<EventNotification<TEventBase>, Task> onEvent)
+        public Task StartAsync(Func<EventNotification<TEventBase>, Task> onEvent)
         {
-            _onEvent = onEvent;
+            _onEvent = onEvent ?? throw new ArgumentNullException(nameof(onEvent));
             var settings = CatchUpSubscriptionFilteredSettings.Default;
             _subscription = _connection.FilteredSubscribeToAllFrom(Position.Start,
                                                                    Filter.ExcludeSystemEvents,
@@ -59,7 +59,7 @@ namespace DomainLib.Projections.EventStore
                 tasks.Add(_onEvent(notification));
             }
 
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
         private void OnLiveProcessingStarted(EventStoreCatchUpSubscription arg1)

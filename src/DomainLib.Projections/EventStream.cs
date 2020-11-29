@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace DomainLib.Projections
 {
-    public class EventStream<TEventBase>
+    public sealed class EventStream<TEventBase>
     {
         private readonly IEventPublisher<TEventBase> _publisher;
         private readonly EventProjectionMap _projectionMap;
@@ -13,23 +13,22 @@ namespace DomainLib.Projections
 
         public EventStream(IEventPublisher<TEventBase> publisher, EventProjectionMap projectionMap, EventContextMap eventContextMap)
         {
-            _publisher = publisher;
-            _projectionMap = projectionMap;
-            _eventContextMap = eventContextMap;
+            _publisher = publisher ?? throw new ArgumentNullException(nameof(publisher));
+            _projectionMap = projectionMap ?? throw new ArgumentNullException(nameof(projectionMap));
+            _eventContextMap = eventContextMap ?? throw new ArgumentNullException(nameof(eventContextMap));
         }
 
         public async Task StartAsync()
         {
-            await ForAllContexts(c => c.OnSubscribing());
-
-            await _publisher.StartAsync(HandleEventNotificationAsync);
+            await ForAllContexts(c => c.OnSubscribing()).ConfigureAwait(false);
+            await _publisher.StartAsync(HandleEventNotificationAsync).ConfigureAwait(false);
         }
 
         private async Task ForAllContexts(Func<IContext, Task> contextAction)
         {
             foreach (var context in _eventContextMap.GetAllContexts())
             {
-                await contextAction(context); 
+                await contextAction(context).ConfigureAwait(false); 
             }
         }
 
@@ -38,10 +37,10 @@ namespace DomainLib.Projections
             switch (notification.NotificationKind)
             {
                 case EventNotificationKind.Event:
-                    await HandleEventAsync(notification.Event);
+                    await HandleEventAsync(notification.Event).ConfigureAwait(false);
                     break;
                 case EventNotificationKind.CaughtUpNotification:
-                    await ForAllContexts(c => c.OnCaughtUp());
+                    await ForAllContexts(c => c.OnCaughtUp()).ConfigureAwait(false);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -54,7 +53,7 @@ namespace DomainLib.Projections
             var contextsForEvent = _eventContextMap.GetContextsForEventType(eventType);
 
             var beforeEventActions = contextsForEvent.Select(c => c.OnBeforeHandleEvent());
-            await Task.WhenAll(beforeEventActions);
+            await Task.WhenAll(beforeEventActions).ConfigureAwait(false);
 
             
             if (_projectionMap.TryGetValue(eventType, out var projections))
@@ -67,11 +66,11 @@ namespace DomainLib.Projections
                     tasks.Add(executeAsync(@event));
                 }
 
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(tasks).ConfigureAwait(false);
             }
 
             var afterEventActions = contextsForEvent.Select(c => c.OnAfterHandleEvent());
-            await Task.WhenAll(afterEventActions);
+            await Task.WhenAll(afterEventActions).ConfigureAwait(false);
         }
     }
 }

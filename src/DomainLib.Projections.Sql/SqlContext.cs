@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace DomainLib.Projections.Sql
 {
-    public class SqlContext : IContext
+    public sealed class SqlContext : IContext
     {
         private static readonly ILogger<SqlContext> Log = Logger.CreateFor<SqlContext>();
         private readonly IDbConnector _connector;
@@ -35,8 +35,8 @@ namespace DomainLib.Projections.Sql
             {
                 if (Connection.State == ConnectionState.Closed)
                 {
-                    await Connection.OpenAsync();
-                    await CreateSchema();
+                    await Connection.OpenAsync().ConfigureAwait(false);
+                    await CreateSchema().ConfigureAwait(false);
                 }
 
                 if (_settings.UseTransactionBeforeCaughtUp)
@@ -86,7 +86,7 @@ namespace DomainLib.Projections.Sql
             {
                 if (_settings.HandleLiveEventsInTransaction)
                 {
-                    _activeTransaction = await Connection.BeginTransactionAsync();
+                    _activeTransaction = await Connection.BeginTransactionAsync().ConfigureAwait(false);
                 }
             }
         }
@@ -133,7 +133,7 @@ namespace DomainLib.Projections.Sql
                 var createSchemaCommand = Connection.CreateCommand();
             
                 createSchemaCommand.CommandText = _schemaStringBuilder.ToString();
-                await createSchemaCommand.ExecuteNonQueryAsync();
+                await createSchemaCommand.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {

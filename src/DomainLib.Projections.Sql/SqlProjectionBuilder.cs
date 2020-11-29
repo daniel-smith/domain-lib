@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace DomainLib.Projections.Sql
 {
-    public class SqlProjectionBuilder<TEvent, TSqlProjection> where TSqlProjection : ISqlProjection
+    public sealed class SqlProjectionBuilder<TEvent, TSqlProjection> where TSqlProjection : ISqlProjection
     {
         private readonly EventProjectionBuilder<TEvent> _builder;
         private readonly TSqlProjection _sqlProjection;
@@ -14,8 +14,8 @@ namespace DomainLib.Projections.Sql
 
         public SqlProjectionBuilder(EventProjectionBuilder<TEvent> builder, TSqlProjection sqlProjection) 
         {
-            _builder = builder;
-            _sqlProjection = sqlProjection;
+            _builder = builder ?? throw new ArgumentNullException(nameof(builder));
+            _sqlProjection = sqlProjection ?? throw new ArgumentNullException(nameof(sqlProjection));
             _connector = sqlProjection.DbConnector;
             _context = SqlContextProvider.GetOrCreateContext(sqlProjection.DbConnector);
             _context.RegisterProjection(_sqlProjection);
