@@ -54,7 +54,7 @@ namespace DomainLib.Projections.EventStore
             foreach (var type in _projectionEventNameMap.GetClrTypesForEventName(resolvedEvent.Event.EventType))
             {
                 var @event = _serializer.DeserializeEvent<TEventBase>(resolvedEvent.Event.Data, resolvedEvent.Event.EventType, type);
-                var notification = EventNotification.FromEvent(@event);
+                var notification = EventNotification.FromEvent(@event, resolvedEvent.Event.EventId);
 
                 tasks.Add(_onEvent(notification));
             }

@@ -1,22 +1,24 @@
-﻿using System;
+﻿using DomainLib.Aggregates;
+using DomainLib.Aggregates.Registration;
+using DomainLib.Common;
 using DomainLib.EventStore.Testing;
+using DomainLib.Persistence;
+using DomainLib.Persistence.EventStore;
 using DomainLib.Projections;
 using DomainLib.Projections.EventStore;
 using DomainLib.Projections.Sql;
 using DomainLib.Projections.Sqlite;
 using DomainLib.Serialization.Json;
+using EventStore.ClientAPI;
+using Microsoft.Extensions.Logging;
 using NUnit.Framework;
+using Shopping.Domain.Aggregates;
+using Shopping.Domain.Commands;
 using Shopping.Domain.Events;
+using System;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using DomainLib.Aggregates;
-using DomainLib.Aggregates.Registration;
-using DomainLib.Persistence;
-using DomainLib.Persistence.EventStore;
-using EventStore.ClientAPI;
-using Shopping.Domain.Aggregates;
-using Shopping.Domain.Commands;
 
 namespace Shopping.Infrastructure.Tests
 {
@@ -26,6 +28,10 @@ namespace Shopping.Infrastructure.Tests
         [Test]
         public async Task ReadModelIsBuilt()
         {
+            var loggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Debug)
+                                                                       .AddConsole());
+
+            Logger.SetLoggerFactory(loggerFactory);
             var projectionRegistryBuilder = new ProjectionRegistryBuilder();
 
             ShoppingCartSummarySqlProjection.Register(projectionRegistryBuilder);
@@ -37,7 +43,10 @@ namespace Shopping.Infrastructure.Tests
             var serializer = new JsonEventSerializer(new EventNameMap());
             var eventPublisher = new EventStoreEventPublisher<IDomainEvent>(EventStoreConnection, serializer, registry.EventNameMap);
 
-            var eventStream = new EventStream<IDomainEvent>(eventPublisher, registry.EventProjectionMap, registry.EventContextMap);
+            var eventStream = new EventStream<IDomainEvent>(eventPublisher,
+                                                            registry.EventProjectionMap,
+                                                            registry.EventContextMap,
+                                                            EventStreamConfiguration.ReadModelDefaults);
             await WriteEventsToStream();
 
             await eventStream.StartAsync();
