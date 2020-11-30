@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace DomainLib.Projections
 {
-    public sealed class EventProjectionMap : Dictionary<Type, IList<(Type, ProjectEvent)>>
+    public sealed class EventProjectionMap : Dictionary<Type, IList<(Type, RunProjection)>>
     {
-        public void AddProjectionFunc(Type eventType, Type projectionType, ProjectEvent projectionFunc)
+        public void AddProjectionFunc(Type eventType, Type projectionType, RunProjection projectionFunc)
         {
             if (eventType == null) throw new ArgumentNullException(nameof(eventType));
             if (projectionType == null) throw new ArgumentNullException(nameof(projectionType));
@@ -17,7 +17,7 @@ namespace DomainLib.Projections
             }
             else
             {
-                var projectionsList = new List<(Type, ProjectEvent)> {(projectionType, projectionFunc)};
+                var projectionsList = new List<(Type, RunProjection)> {(projectionType, projectionFunc)};
                 Add(eventType, projectionsList);
             }
         }

@@ -7,9 +7,12 @@ namespace DomainLib.Projections.Sql
     {
         SqlContextSettings ContextSettings => SqlContextSettings.Default;
         DbConnection CreateConnection();
-        DbCommand BuildUpsertCommand(ISqlProjection projection, EventSqlColumnDefinitions eventPropertyMap);
-        DbCommand BuildDeleteCommand(ISqlProjection projection, EventSqlColumnDefinitions eventPropertyMap);
-        void BindParameters<TEvent>(DbCommand command, TEvent @event, EventSqlColumnDefinitions eventPropertyMap);
+        string BuildUpsertCommandText(ISqlProjection projection, SqlColumnDefinitions columnDefinitions);
+        string BuildDeleteCommandText(ISqlProjection projection, SqlColumnDefinitions columnDefinitions);
         string BuildCreateTableSql(string tableName, IEnumerable<SqlColumnDefinition> columnDefinitions);
+        void BindParameters<TEvent>(DbCommand command,
+                                    TEvent @event,
+                                    SqlColumnDefinitions columnDefinitions,
+                                    ISqlParameterBindingMap<TEvent> parameterBindingMap);
     }
 }

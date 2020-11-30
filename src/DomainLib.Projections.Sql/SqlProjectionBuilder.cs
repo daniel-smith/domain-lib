@@ -1,45 +1,168 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
+using DomainLib.Common;
+using Microsoft.Extensions.Logging;
 
 namespace DomainLib.Projections.Sql
 {
-    public sealed class SqlProjectionBuilder<TEvent, TSqlProjection> where TSqlProjection : ISqlProjection
+    public sealed class SqlProjectionBuilder<TEvent, TSqlProjection> : IProjectionBuilder
+        where TSqlProjection : ISqlProjection
     {
-        private readonly EventProjectionBuilder<TEvent> _builder;
+        public static readonly ILogger<SqlProjectionBuilder<TEvent, TSqlProjection>> Log =
+            Logger.CreateFor<SqlProjectionBuilder<TEvent, TSqlProjection>>();
         private readonly TSqlProjection _sqlProjection;
         private readonly IDbConnector _connector;
         private readonly SqlContext _context;
+        private bool _executesUpsert;
+        private bool _executesDelete;
+        private string _customSqlCommandText;
+
+        private ISqlParameterBindingMap<TEvent> _parameterBindingMap;
 
         public SqlProjectionBuilder(EventProjectionBuilder<TEvent> builder, TSqlProjection sqlProjection) 
         {
-            _builder = builder ?? throw new ArgumentNullException(nameof(builder));
+            if (builder == null) throw new ArgumentNullException(nameof(builder));
             _sqlProjection = sqlProjection ?? throw new ArgumentNullException(nameof(sqlProjection));
             _connector = sqlProjection.DbConnector;
             _context = SqlContextProvider.GetOrCreateContext(sqlProjection.DbConnector);
             _context.RegisterProjection(_sqlProjection);
-            _builder.RegisterContextForEvent(_context);
+            builder.RegisterProjectionBuilder(this);
+            builder.RegisterContextForEvent(_context);
+            _parameterBindingMap = CreateReflectedParameterBindingMap();
         }
 
         public SqlProjectionBuilder<TEvent, TSqlProjection> ExecutesUpsert()
         {
-            var eventPropertyMap = BuildEventPropertyMap();
-            var executeUpsert = BuildExecuteNonQueryFunc(eventPropertyMap,
-                                                    map => _connector.BuildUpsertCommand(_sqlProjection, map));
-            _builder.RegisterEventProjectionFunc<TSqlProjection>(executeUpsert);
-
+            _executesUpsert = true;
             return this;
         }
 
         public SqlProjectionBuilder<TEvent, TSqlProjection> ExecutesDelete()
         {
-            var eventPropertyMap = BuildEventPropertyMap();
+            _executesDelete = true;
+            return this;
+        }
 
-            var eventColumnNames = eventPropertyMap.Values.Select(c => c.Name).ToList();
+        public SqlProjectionBuilder<TEvent, TSqlProjection> ExecutesCustomSql(string sqlCommand)
+        {
+            _customSqlCommandText = sqlCommand;
+            return this;
+        }
 
-            if (!_sqlProjection.Columns.Where(c => c.Value.IsInPrimaryKey)
-                               .All(pk => eventColumnNames.Contains(pk.Value.Name)))
+        public SqlProjectionBuilder<TEvent, TSqlProjection> ParameterMappings(
+            params (string parameterName, Func<TEvent, object> getParameterValue)[] mappings)
+        {
+            Dictionary<string, Func<TEvent, object>> mappingsDictionary;
+            try
+            {
+                mappingsDictionary = mappings.ToDictionary(x => x.parameterName, x => x.getParameterValue);
+            }
+            catch (InvalidOperationException ex)
+            {
+                Log.LogError(ex, "Unable to create parameter binding map for parameter {parameterName}. " +
+                                 "Check you haven't mapped the same parameter more than once");
+                throw;
+            }
+            
+            _parameterBindingMap = new ParameterBindingMap<TEvent>(mappingsDictionary);
+            return this;
+        }
+
+        public SqlProjectionBuilder<TEvent, TSqlProjection> CustomParameterBindings(
+            GetParameterBindings<TEvent> getBindings)
+        {
+            _parameterBindingMap = new ParameterBindingMap<TEvent>(getBindings);
+            return this;
+        }
+
+        IEnumerable<(Type eventType, Type projectionType, RunProjection func)> IProjectionBuilder.BuildProjections()
+        {
+            return EnumerableEx.Return((typeof(TEvent), typeof(TSqlProjection), BuildDbCommandProjection()));
+        }
+
+        private RunProjection BuildDbCommandProjection()
+        {
+            if (_executesUpsert && _executesDelete)
+            {
+                throw new InvalidOperationException("An event cannot perform both an upsert " +
+                                                    "and a delete on the same projection.");
+            }
+
+            var commandTextBuilder = new StringBuilder();
+
+            if (_executesUpsert)
+            {
+                commandTextBuilder.Append(_connector.BuildUpsertCommandText(_sqlProjection, _sqlProjection.Columns));
+                commandTextBuilder.Append(" ");
+            }
+
+            if (_executesDelete)
+            {
+                ValidateDeleteCommand();
+                commandTextBuilder.Append(_connector.BuildDeleteCommandText(_sqlProjection, _sqlProjection.Columns));
+                commandTextBuilder.Append(" ");
+            }
+
+            if (!string.IsNullOrWhiteSpace(_customSqlCommandText))
+            {
+                commandTextBuilder.Append(_customSqlCommandText);
+            }
+
+            var dbCommand = _context.Connection.CreateCommand();
+            dbCommand.CommandText = commandTextBuilder.ToString();
+
+            return async @event =>
+            {
+                _connector.BindParameters(dbCommand, (TEvent) @event, _sqlProjection.Columns, _parameterBindingMap);
+
+                if (Log.IsEnabled(LogLevel.Trace))
+                {
+                    Log.LogTrace("Executing SQL command. Command text {CommandText} for event {EventType} in " +
+                                 "projection {ProjectionName}. Parameters {Parameters}",
+                                 dbCommand.CommandText,
+                                 typeof(TEvent),
+                                 typeof(TSqlProjection),
+                                 dbCommand.Parameters.ToFormattedString());
+                }
+
+                int rowsAffected;
+                try
+                {
+                    rowsAffected = await dbCommand.ExecuteNonQueryAsync();
+                }
+                catch (DbException ex)
+                {
+                    Log.LogError(ex,
+                                 "Error executing database command {CommandText} for event {EventType} in" +
+                                 "projection {ProjectionName}. Parameters {parameters}",
+                                 dbCommand.CommandText,
+                                 typeof(TEvent),
+                                 typeof(TSqlProjection),
+                                 dbCommand.Parameters.ToFormattedString());
+                    throw;
+                }
+
+                if (rowsAffected == 0)
+                {
+                    Log.LogWarning("No rows affected by database command {CommandText} for event {EventType} in " +
+                                   "projection {ProjectionName}. Please check this is intended",
+                                   dbCommand.CommandText,
+                                   typeof(TEvent),
+                                   typeof(TSqlProjection));
+                }
+            };
+        }
+
+        private void ValidateDeleteCommand()
+        {
+            var primaryKeyColumns = _sqlProjection.Columns.Where(c => c.Value.IsInPrimaryKey)
+                                                  .Select(kvp => kvp.Value.Name);
+            var parameterNames = _parameterBindingMap.GetParameterNames();
+
+            if (!primaryKeyColumns.All(pk => parameterNames.Contains(pk)))
             {
                 throw new InvalidOperationException($"All primary key columns must be present in event. " +
                                                     $"{typeof(TEvent).FullName} cannot be used to delete " +
@@ -48,62 +171,23 @@ namespace DomainLib.Projections.Sql
                                                     $"event, you will need to use a custom command instead");
             }
 
-            var executeDelete = BuildExecuteNonQueryFunc(eventPropertyMap,
-                                                    map => _connector.BuildDeleteCommand(_sqlProjection, map));
-            _builder.RegisterEventProjectionFunc<TSqlProjection>(executeDelete);
-
-            return this;
         }
 
-        public SqlProjectionBuilder<TEvent, TSqlProjection> ExecutesCustomSql(string sqlCommand)
+        private ParameterBindingMap<TEvent> CreateReflectedParameterBindingMap()
         {
-            var eventPropertyMap = BuildEventPropertyMap();
-            var executeCustomSql = BuildExecuteNonQueryFunc(eventPropertyMap,
-                                                            map =>
-                                                            {
-                                                                var command = _context.Connection.CreateCommand();
-                                                                command.CommandText = sqlCommand;
-                                                                return command;
-                                                            });
-
-            _builder.RegisterEventProjectionFunc<TSqlProjection>(executeCustomSql);
-
-            return this;
-        }
-
-        private EventSqlColumnDefinitions BuildEventPropertyMap()
-        {
-            var eventPropertyMap = new EventSqlColumnDefinitions();
+            var parameterBindings = new Dictionary<string, Func<TEvent, object>>();
             var eventProperties = typeof(TEvent).GetProperties();
 
-            foreach (var (key, column) in _sqlProjection.Columns)
+            foreach (var key in _sqlProjection.Columns.Keys)
             {
                 var propertyInfo = eventProperties.FirstOrDefault(x => x.Name == key);
                 if (propertyInfo != null)
                 {
-                    eventPropertyMap.Add(propertyInfo, column);
+                    parameterBindings.Add(key, @event => propertyInfo.GetValue(@event));
                 }
             }
 
-            return eventPropertyMap;
-        }
-
-        private Func<TEvent, Task> BuildExecuteNonQueryFunc(EventSqlColumnDefinitions sqlColumnDefinitions, Func<EventSqlColumnDefinitions, DbCommand> buildCommand)
-        {
-            var command = buildCommand(sqlColumnDefinitions);
-            command.Connection = _context.Connection;
-
-            return async @event =>
-            {
-                _connector.BindParameters(command, @event, sqlColumnDefinitions);
-                var rowsAffected = await command.ExecuteNonQueryAsync();
-
-                if (rowsAffected == 0)
-                {
-                    Console.WriteLine("No rows affected!");
-                }
-            };
-
+            return new ParameterBindingMap<TEvent>(parameterBindings);
         }
     }
 }

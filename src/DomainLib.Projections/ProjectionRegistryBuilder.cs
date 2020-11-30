@@ -1,23 +1,32 @@
 ﻿using System;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace DomainLib.Projections
 {
     public sealed class ProjectionRegistryBuilder
     {
+        private readonly IList<IEventProjectionBuilder> _eventProjectionBuilders = new List<IEventProjectionBuilder>();
         private readonly EventProjectionMap _eventProjectionMap = new EventProjectionMap();
         private readonly ProjectionEventNameMap _eventNameMap = new ProjectionEventNameMap();
         private readonly EventContextMap _eventContextMap = new EventContextMap();
 
         public EventProjectionBuilder<TEvent> Event<TEvent>()
         {
-            return new EventProjectionBuilder<TEvent>(this);
+            var builder = new EventProjectionBuilder<TEvent>(this);
+            _eventProjectionBuilders.Add(builder);
+
+            return builder;
         }
 
-        internal void RegisterEventProjectionFunc<TEvent, TProjection>(Func<TEvent, Task> projectEvent)
+        public ProjectionRegistry Build()
         {
-            if (projectEvent == null) throw new ArgumentNullException(nameof(projectEvent));
-            _eventProjectionMap.AddProjectionFunc(typeof(TEvent), typeof(TProjection), @event => projectEvent((TEvent)@event));
+            foreach (var (eventType, projectionType, func) in _eventProjectionBuilders.SelectMany(epb => epb.BuildProjectionFuncs()))
+            {
+                _eventProjectionMap.AddProjectionFunc(eventType, projectionType, func);
+            }
+
+            return new ProjectionRegistry(_eventProjectionMap, _eventContextMap, _eventNameMap);
         }
 
         internal void RegisterEventName<TEvent>(string name)
@@ -30,11 +39,6 @@ namespace DomainLib.Projections
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
             _eventContextMap.RegisterContextForEvent<TEvent>(context);
-        }
-
-        public ProjectionRegistry Build()
-        {
-            return new ProjectionRegistry(_eventProjectionMap, _eventContextMap, _eventNameMap);
         }
     }
 }

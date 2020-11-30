@@ -2,5 +2,5 @@
 
 namespace DomainLib.Projections
 {
-    public delegate Task ProjectEvent(object @event);
+    public delegate Task RunProjection(object @event);
 }

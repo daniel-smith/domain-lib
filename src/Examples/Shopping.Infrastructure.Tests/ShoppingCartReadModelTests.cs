@@ -17,7 +17,6 @@ using DomainLib.Persistence.EventStore;
 using EventStore.ClientAPI;
 using Shopping.Domain.Aggregates;
 using Shopping.Domain.Commands;
-using Enum = Google.Protobuf.WellKnownTypes.Enum;
 
 namespace Shopping.Infrastructure.Tests
 {

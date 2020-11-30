@@ -41,7 +41,7 @@ namespace DomainLib.Projections.Sql
 
                 if (_settings.UseTransactionBeforeCaughtUp)
                 {
-                    _activeTransaction = await Connection.BeginTransactionAsync();
+                    _activeTransaction = await Connection.BeginTransactionAsync().ConfigureAwait(false);
                 }
 
                 _isProcessingLiveEvents = false;

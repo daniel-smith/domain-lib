@@ -1,11 +1,13 @@
 ﻿using System;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace DomainLib.Projections
 {
-    public sealed class EventProjectionBuilder<TEvent>
+    public sealed class EventProjectionBuilder<TEvent> : IEventProjectionBuilder
     {
         private readonly ProjectionRegistryBuilder _builder;
+        private readonly HashSet<IProjectionBuilder> _projectionBuilders = new HashSet<IProjectionBuilder>();
 
         public EventProjectionBuilder(ProjectionRegistryBuilder builder)
         {
@@ -29,16 +31,25 @@ namespace DomainLib.Projections
             return this;
         }
 
-        public void RegisterEventProjectionFunc<TProjection>(Func<TEvent, Task> projectEvent)
-        {
-            if (projectEvent == null) throw new ArgumentNullException(nameof(projectEvent));
-            _builder.RegisterEventProjectionFunc<TEvent, TProjection>(projectEvent);
-        }
-
         public void RegisterContextForEvent(IContext context)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
             _builder.RegisterContextForEvent<TEvent>(context);
+        }
+
+        public void RegisterProjectionBuilder(IProjectionBuilder projectionBuilder)
+        {
+            if (projectionBuilder == null) throw new ArgumentNullException(nameof(projectionBuilder));
+            if (!_projectionBuilders.Add(projectionBuilder))
+            {
+                throw new
+                    InvalidOperationException($"Projection Builder {projectionBuilder.GetType().FullName} has already been registered");
+            }
+        }
+
+        public IEnumerable<(Type eventType, Type projectionType, RunProjection func)> BuildProjectionFuncs()
+        {
+            return _projectionBuilders.SelectMany(pb => pb.BuildProjections());
         }
     }
 }

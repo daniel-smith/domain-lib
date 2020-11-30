@@ -5,11 +5,14 @@ using System.Data;
 using System.Data.Common;
 using System.Data.SQLite;
 using System.Linq;
+using DomainLib.Common;
+using Microsoft.Extensions.Logging;
 
 namespace DomainLib.Projections.Sqlite
 {
     public sealed class SqliteDbConnector : IDbConnector
     {
+        public static readonly ILogger<SqliteDbConnector> Log = Logger.CreateFor<SqliteDbConnector>();
         private static readonly string SqlValueSeparator = $", {Environment.NewLine}";
         private static readonly string SqlPredicateSeparator = $" AND{Environment.NewLine}";
         private readonly string _connectionString;
@@ -52,7 +55,7 @@ CREATE TABLE IF NOT EXISTS {tableName} (
            return createTableSql;
         }
 
-        public DbCommand BuildUpsertCommand(ISqlProjection projection, EventSqlColumnDefinitions eventPropertyMap)
+        public string BuildUpsertCommandText(ISqlProjection projection, SqlColumnDefinitions eventPropertyMap)
         {
             var columns = string.Join(SqlValueSeparator, eventPropertyMap.Select(x => x.Value.Name));
             var parameterNames = string.Join(SqlValueSeparator, eventPropertyMap.Select(x => $"@{x.Value.Name}"));
@@ -65,12 +68,10 @@ VALUES (
 {parameterNames}
 );
 ";
-
-            var command = new SQLiteCommand(commandText);
-            return command;
+            return commandText;
         }
 
-        public DbCommand BuildDeleteCommand(ISqlProjection projection, EventSqlColumnDefinitions eventPropertyMap)
+        public string BuildDeleteCommandText(ISqlProjection projection, SqlColumnDefinitions eventPropertyMap)
         {
             var primaryKeyColumns = eventPropertyMap.Where(x => x.Value.IsInPrimaryKey)
                                                     .Select(x => $"{x.Value.Name} = @{x.Value.Name}");
@@ -83,19 +84,31 @@ WHERE
 {primaryKeysSql}
 ;
 ";
-            var command = new SQLiteCommand(commandText);
-            return command;
+            return commandText;
         }
-        
-        public void BindParameters<TEvent>(DbCommand command, TEvent @event, EventSqlColumnDefinitions eventPropertyMap)
-        {
-            foreach (var (propertyInfo, sqlColumnDefinition) in eventPropertyMap)
-            {
-                // TODO. We can do better than reflection here.
-                var value = propertyInfo.GetValue(@event);
 
-                var parameter = new SQLiteParameter($"@{sqlColumnDefinition.Name}", sqlColumnDefinition.DataType) {Value = value};
-                command.Parameters.Add(parameter);
+        public void BindParameters<TEvent>(DbCommand command,
+                                           TEvent @event,
+                                           SqlColumnDefinitions columnDefinitions,
+                                           ISqlParameterBindingMap<TEvent> parameterBindingMap)
+        {
+            try
+            {
+                foreach (var (name, value) in parameterBindingMap.GetParameterNamesAndValues(@event))
+                {
+                    var sqlColumnDefinition = columnDefinitions[name];
+                    var parameter = new SQLiteParameter($"@{sqlColumnDefinition.Name}", sqlColumnDefinition.DataType)
+                        {Value = value};
+                    command.Parameters.Add(parameter);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.LogCritical(ex,
+                                "Unknown exception occurred while trying to bind parameters for event {EventName} {Event}",
+                                @event.GetType().FullName,
+                                @event);
+                throw;
             }
         }
 
