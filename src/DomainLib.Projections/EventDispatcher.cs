@@ -3,26 +3,34 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DomainLib.Common;
+using DomainLib.Serialization;
 using Microsoft.Extensions.Logging;
 
 namespace DomainLib.Projections
 {
-    public sealed class EventStream<TEventBase>
+    public sealed class EventDispatcher<TEventBase>
     {
-        private static readonly ILogger<EventStream<TEventBase>> Log = Logger.CreateFor<EventStream<TEventBase>>();
-        private readonly IEventPublisher<TEventBase> _publisher;
+        private static readonly ILogger<EventDispatcher<TEventBase>> Log = Logger.CreateFor<EventDispatcher<TEventBase>>();
+        private readonly IEventPublisher<byte[]> _publisher;
         private readonly EventProjectionMap _projectionMap;
         private readonly EventContextMap _eventContextMap;
-        private readonly EventStreamConfiguration _configuration;
+        private readonly EventDispatcherConfiguration _configuration;
+        private readonly IEventSerializer _serializer;
+        private readonly IProjectionEventNameMap _projectionEventNameMap;
 
-        public EventStream(IEventPublisher<TEventBase> publisher,
-                           EventProjectionMap projectionMap,
-                           EventContextMap eventContextMap,
-                           EventStreamConfiguration configuration)
+        public EventDispatcher(IEventPublisher<byte[]> publisher,
+                               EventProjectionMap projectionMap,
+                               EventContextMap eventContextMap,
+                               IEventSerializer serializer,
+                               IProjectionEventNameMap projectionEventNameMap,
+                               EventDispatcherConfiguration configuration)
         {
             _publisher = publisher ?? throw new ArgumentNullException(nameof(publisher));
             _projectionMap = projectionMap ?? throw new ArgumentNullException(nameof(projectionMap));
             _eventContextMap = eventContextMap ?? throw new ArgumentNullException(nameof(eventContextMap));
+            _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+            _projectionEventNameMap =
+                projectionEventNameMap ?? throw new ArgumentNullException(nameof(projectionEventNameMap));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
@@ -44,12 +52,13 @@ namespace DomainLib.Projections
             }
         }
 
-        private async Task HandleEventNotificationAsync(EventNotification<TEventBase> notification)
+        private async Task HandleEventNotificationAsync(EventNotification<byte[]> notification)
         {
             switch (notification.NotificationKind)
             {
                 case EventNotificationKind.Event:
-                    await HandleEventAsync(notification.Event, notification.EventId).ConfigureAwait(false);
+                    await HandleEventAsync(notification.Event, notification.EventType, notification.EventId)
+                        .ConfigureAwait(false);
                     break;
                 case EventNotificationKind.CaughtUpNotification:
                     Log.LogDebug("Received caught up notification");
@@ -61,7 +70,30 @@ namespace DomainLib.Projections
             }
         }
 
-        private async Task HandleEventAsync(TEventBase @event, Guid eventId)
+        private async Task HandleEventAsync(byte[] eventData, string eventType, Guid eventId)
+        {
+            var tasks = new List<Task>();
+
+            foreach (var type in _projectionEventNameMap.GetClrTypesForEventName(eventType))
+            {
+                TEventBase @event;
+                try
+                {
+                    @event = _serializer.DeserializeEvent<TEventBase>(eventData, eventType, type);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+
+                tasks.Add(DispatchEventToProjections(@event, eventId));
+            }
+
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+
+        private async Task DispatchEventToProjections(TEventBase @event, Guid eventId)
         {
             try
             {
@@ -110,7 +142,7 @@ namespace DomainLib.Projections
                 if (!_configuration.ContinueAfterProjectionException)
                 {
                     _publisher.Stop();
-                    throw new EventStreamException($"Unhandled exception in event stream handling event ID" +
+                    throw new EventStreamException("Unhandled exception in event stream handling event ID" +
                                                    $" {eventId}. Stopping event publisher",
                                                    ex);
                 }

@@ -19,6 +19,7 @@ using System;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using ProjectionDispatcher = DomainLib.Projections.EventDispatcher<Shopping.Domain.Events.IDomainEvent>;
 
 namespace Shopping.Infrastructure.Tests
 {
@@ -41,12 +42,14 @@ namespace Shopping.Infrastructure.Tests
             // TODO: EventNameMap isn't actually used here as we deserialize differently on the read side.
             // We need to fix this so that we don't have to pass an empty instance in
             var serializer = new JsonEventSerializer(new EventNameMap());
-            var eventPublisher = new EventStoreEventPublisher<IDomainEvent>(EventStoreConnection, serializer, registry.EventNameMap);
+            var eventPublisher = new EventStoreEventPublisher(EventStoreConnection);
 
-            var eventStream = new EventStream<IDomainEvent>(eventPublisher,
-                                                            registry.EventProjectionMap,
-                                                            registry.EventContextMap,
-                                                            EventStreamConfiguration.ReadModelDefaults);
+            var eventStream = new ProjectionDispatcher(eventPublisher,
+                                                       registry.EventProjectionMap,
+                                                       registry.EventContextMap,
+                                                       serializer,
+                                                       registry.EventNameMap,
+                                                       EventDispatcherConfiguration.ReadModelDefaults);
             await WriteEventsToStream();
 
             await eventStream.StartAsync();
@@ -118,8 +121,9 @@ namespace Shopping.Infrastructure.Tests
                    .ToSqlProjection(shoppingCartSummary)
                    .ExecutesDelete();
         }
-        
+
         public IDbConnector DbConnector { get; } = new SqliteDbConnector("Data Source=test.db; Version=3;Pooling=True;Max Pool Size=100;");
+        public ISqlDialect SqlDialect { get; } = new SqliteSqlDialect();
         public string TableName { get; } = "ShoppingCartSummary";
 
         public SqlColumnDefinitions Columns { get; } = new()

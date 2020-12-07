@@ -6,10 +6,10 @@ namespace DomainLib.Projections
 {
     public sealed class EventContextMap
     {
-        private readonly HashSet<IContext> _allContexts = new HashSet<IContext>();
-        private readonly Dictionary<Type, List<IContext>> _eventContextMap = new Dictionary<Type, List<IContext>>();
+        private readonly HashSet<IContext> _allContexts = new();
+        private readonly Dictionary<Type, List<IContext>> _eventContextMap = new();
         // ReSharper disable once CollectionNeverUpdated.Local
-        private static readonly Collection<IContext> EmptyContextCollection = new Collection<IContext>();
+        private static readonly Collection<IContext> EmptyContextCollection = new();
 
         public void RegisterContextForEvent<TEvent>(IContext context)
         {

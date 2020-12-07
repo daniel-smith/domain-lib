@@ -15,6 +15,7 @@ namespace DomainLib.Projections.Sql
             Logger.CreateFor<SqlProjectionBuilder<TEvent, TSqlProjection>>();
         private readonly TSqlProjection _sqlProjection;
         private readonly IDbConnector _connector;
+        private readonly ISqlDialect _sqlDialect;
         private readonly SqlContext _context;
         private bool _executesUpsert;
         private bool _executesDelete;
@@ -27,7 +28,8 @@ namespace DomainLib.Projections.Sql
             if (builder == null) throw new ArgumentNullException(nameof(builder));
             _sqlProjection = sqlProjection ?? throw new ArgumentNullException(nameof(sqlProjection));
             _connector = sqlProjection.DbConnector;
-            _context = SqlContextProvider.GetOrCreateContext(sqlProjection.DbConnector);
+            _sqlDialect = sqlProjection.SqlDialect;
+            _context = SqlContextProvider.GetOrCreateContext(sqlProjection.DbConnector, sqlProjection.SqlDialect);
             _context.RegisterProjection(_sqlProjection);
             builder.RegisterProjectionBuilder(this);
             builder.RegisterContextForEvent(_context);
@@ -95,14 +97,14 @@ namespace DomainLib.Projections.Sql
 
             if (_executesUpsert)
             {
-                commandTextBuilder.Append(_connector.BuildUpsertCommandText(_sqlProjection, _sqlProjection.Columns));
+                commandTextBuilder.Append(_sqlDialect.BuildUpsertCommandText(_sqlProjection, _sqlProjection.Columns));
                 commandTextBuilder.Append(" ");
             }
 
             if (_executesDelete)
             {
                 ValidateDeleteCommand();
-                commandTextBuilder.Append(_connector.BuildDeleteCommandText(_sqlProjection, _sqlProjection.Columns));
+                commandTextBuilder.Append(_sqlDialect.BuildDeleteCommandText(_sqlProjection, _sqlProjection.Columns));
                 commandTextBuilder.Append(" ");
             }
 
@@ -131,7 +133,14 @@ namespace DomainLib.Projections.Sql
                 int rowsAffected;
                 try
                 {
-                    rowsAffected = await dbCommand.ExecuteNonQueryAsync();
+                    if (dbCommand is DbCommand concreteCommand)
+                    {
+                        rowsAffected = await concreteCommand.ExecuteNonQueryAsync();
+                    }
+                    else
+                    {
+                        rowsAffected = dbCommand.ExecuteNonQuery();
+                    }
                 }
                 catch (DbException ex)
                 {

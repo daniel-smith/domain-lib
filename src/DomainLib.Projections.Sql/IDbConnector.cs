@@ -1,16 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Data.Common;
+﻿using System.Data;
 
 namespace DomainLib.Projections.Sql
 {
     public interface IDbConnector
     {
         SqlContextSettings ContextSettings => SqlContextSettings.Default;
-        DbConnection CreateConnection();
-        string BuildUpsertCommandText(ISqlProjection projection, SqlColumnDefinitions columnDefinitions);
-        string BuildDeleteCommandText(ISqlProjection projection, SqlColumnDefinitions columnDefinitions);
-        string BuildCreateTableSql(string tableName, IEnumerable<SqlColumnDefinition> columnDefinitions);
-        void BindParameters<TEvent>(DbCommand command,
+        IDbConnection CreateConnection();
+        void BindParameters<TEvent>(IDbCommand command,
                                     TEvent @event,
                                     SqlColumnDefinitions columnDefinitions,
                                     ISqlParameterBindingMap<TEvent> parameterBindingMap);

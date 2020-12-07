@@ -1,28 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using DomainLib.Serialization;
-using EventStore.ClientAPI;
+﻿using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
+using System;
+using System.Threading.Tasks;
 
 namespace DomainLib.Projections.EventStore
 {
-    public class EventStoreEventPublisher<TEventBase> : IEventPublisher<TEventBase>, IDisposable
+    public class EventStoreEventPublisher : IEventPublisher<byte[]>, IDisposable
     {
         private readonly IEventStoreConnection _connection;
-        private readonly IEventSerializer _serializer;
-        private readonly IProjectionEventNameMap _projectionEventNameMap;
-        private Func<EventNotification<TEventBase>, Task> _onEvent;
+        private Func<EventNotification<byte[]>, Task> _onEvent;
         private EventStoreCatchUpSubscription _subscription;
-
-        public EventStoreEventPublisher(IEventStoreConnection connection, IEventSerializer serializer, IProjectionEventNameMap projectionEventNameMap)
+        
+        public EventStoreEventPublisher(IEventStoreConnection connection)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
-            _projectionEventNameMap = projectionEventNameMap ?? throw new ArgumentNullException(nameof(projectionEventNameMap));
         }
 
-        public Task StartAsync(Func<EventNotification<TEventBase>, Task> onEvent)
+        public Task StartAsync(Func<EventNotification<byte[]>, Task> onEvent)
         {
             _onEvent = onEvent ?? throw new ArgumentNullException(nameof(onEvent));
             var settings = CatchUpSubscriptionFilteredSettings.Default;
@@ -49,22 +43,15 @@ namespace DomainLib.Projections.EventStore
 
         private async Task HandleEvent(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
         {
-            var tasks = new List<Task>();
-
-            foreach (var type in _projectionEventNameMap.GetClrTypesForEventName(resolvedEvent.Event.EventType))
-            {
-                var @event = _serializer.DeserializeEvent<TEventBase>(resolvedEvent.Event.Data, resolvedEvent.Event.EventType, type);
-                var notification = EventNotification.FromEvent(@event, resolvedEvent.Event.EventId);
-
-                tasks.Add(_onEvent(notification));
-            }
-
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            var notification = EventNotification.FromEvent(resolvedEvent.Event.Data,
+                                                           resolvedEvent.Event.EventType,
+                                                           resolvedEvent.Event.EventId);
+            await _onEvent(notification);
         }
 
         private void OnLiveProcessingStarted(EventStoreCatchUpSubscription arg1)
         {
-            _onEvent(EventNotification.CaughtUp<TEventBase>());
+            _onEvent(EventNotification.CaughtUp<byte[]>());
         }
 
         private void OnSubscriptionDropped(EventStoreCatchUpSubscription subscription, SubscriptionDropReason reason, Exception exception)

@@ -7,7 +7,7 @@ namespace DomainLib.Projections
     public sealed class EventProjectionBuilder<TEvent> : IEventProjectionBuilder
     {
         private readonly ProjectionRegistryBuilder _builder;
-        private readonly HashSet<IProjectionBuilder> _projectionBuilders = new HashSet<IProjectionBuilder>();
+        private readonly HashSet<IProjectionBuilder> _projectionBuilders = new();
 
         public EventProjectionBuilder(ProjectionRegistryBuilder builder)
         {

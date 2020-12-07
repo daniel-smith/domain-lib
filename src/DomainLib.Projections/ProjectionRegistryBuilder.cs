@@ -7,9 +7,9 @@ namespace DomainLib.Projections
     public sealed class ProjectionRegistryBuilder
     {
         private readonly IList<IEventProjectionBuilder> _eventProjectionBuilders = new List<IEventProjectionBuilder>();
-        private readonly EventProjectionMap _eventProjectionMap = new EventProjectionMap();
-        private readonly ProjectionEventNameMap _eventNameMap = new ProjectionEventNameMap();
-        private readonly EventContextMap _eventContextMap = new EventContextMap();
+        private readonly EventProjectionMap _eventProjectionMap = new();
+        private readonly ProjectionEventNameMap _eventNameMap = new();
+        private readonly EventContextMap _eventContextMap = new();
 
         public EventProjectionBuilder<TEvent> Event<TEvent>()
         {

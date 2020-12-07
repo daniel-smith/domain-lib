@@ -12,7 +12,7 @@ namespace DomainLib.Projections.Sql
     public sealed class SqlContext : IContext
     {
         private static readonly ILogger<SqlContext> Log = Logger.CreateFor<SqlContext>();
-        private readonly IDbConnector _connector;
+        private readonly ISqlDialect _sqlDialect;
         private readonly HashSet<ISqlProjection> _projections = new HashSet<ISqlProjection>();
         private readonly SqlContextSettings _settings;
 
@@ -20,14 +20,15 @@ namespace DomainLib.Projections.Sql
         private IDbTransaction _activeTransaction;
         private bool _isProcessingLiveEvents;
 
-        public SqlContext(IDbConnector connector)
+        public SqlContext(IDbConnector connector, ISqlDialect sqlDialect)
         {
-            _connector = connector ?? throw new ArgumentNullException(nameof(connector));
+            if (connector == null) throw new ArgumentNullException(nameof(connector));
+            _sqlDialect = sqlDialect ?? throw new ArgumentNullException(nameof(sqlDialect));
             _settings = connector.ContextSettings;
             Connection = connector.CreateConnection();
         }
 
-        public DbConnection Connection { get; }
+        public IDbConnection Connection { get; }
 
         public async Task OnSubscribing()
         {
@@ -35,13 +36,21 @@ namespace DomainLib.Projections.Sql
             {
                 if (Connection.State == ConnectionState.Closed)
                 {
-                    await Connection.OpenAsync().ConfigureAwait(false);
+                    if (Connection is DbConnection concreteConnection)
+                    {
+                        await concreteConnection.OpenAsync().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        Connection.Open();
+                    }
+
                     await CreateSchema().ConfigureAwait(false);
                 }
 
                 if (_settings.UseTransactionBeforeCaughtUp)
                 {
-                    _activeTransaction = await Connection.BeginTransactionAsync().ConfigureAwait(false);
+                    await BeginTransaction();
                 }
 
                 _isProcessingLiveEvents = false;
@@ -86,7 +95,7 @@ namespace DomainLib.Projections.Sql
             {
                 if (_settings.HandleLiveEventsInTransaction)
                 {
-                    _activeTransaction = await Connection.BeginTransactionAsync().ConfigureAwait(false);
+                    await BeginTransaction();
                 }
             }
         }
@@ -117,12 +126,24 @@ namespace DomainLib.Projections.Sql
             if (_projections.Add(projection))
             {
                 var createTableSql = string.IsNullOrEmpty(projection.CustomCreateTableSql)
-                                         ? _connector.BuildCreateTableSql(projection.TableName, projection.Columns.Values)
+                                         ? _sqlDialect.BuildCreateTableSql(projection.TableName, projection.Columns.Values)
                                          : projection.CustomCreateTableSql;
 
                 createTableSql = string.Concat(createTableSql, " ", projection.AfterCreateTableSql, " ");
 
                 _schemaStringBuilder.Append(createTableSql);
+            }
+        }
+
+        private async Task BeginTransaction()
+        {
+            if (Connection is DbConnection concreteConnection)
+            {
+                _activeTransaction = await concreteConnection.BeginTransactionAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                _activeTransaction = Connection.BeginTransaction();
             }
         }
 
@@ -133,7 +154,15 @@ namespace DomainLib.Projections.Sql
                 var createSchemaCommand = Connection.CreateCommand();
             
                 createSchemaCommand.CommandText = _schemaStringBuilder.ToString();
-                await createSchemaCommand.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+                if (createSchemaCommand is DbCommand concreteCommand)
+                {
+                    await concreteCommand.ExecuteNonQueryAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    createSchemaCommand.ExecuteNonQuery();
+                }
             }
             catch (Exception ex)
             {

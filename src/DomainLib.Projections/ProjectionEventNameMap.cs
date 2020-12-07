@@ -6,7 +6,7 @@ namespace DomainLib.Projections
 {
     internal sealed class ProjectionEventNameMap : IProjectionEventNameMap
     {
-        private readonly Dictionary<string, IList<Type>> _eventNameMap = new Dictionary<string, IList<Type>>();
+        private readonly Dictionary<string, IList<Type>> _eventNameMap = new();
 
         public IEnumerable<Type> GetClrTypesForEventName(string eventName)
         {
