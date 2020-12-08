@@ -27,6 +27,7 @@ namespace Shopping.Infrastructure.Tests
     public class ShoppingCartReadModelTests : EmbeddedEventStoreTest
     {
         [Test]
+        [Ignore("Need to figure out a better end to end test")]
         public async Task ReadModelIsBuilt()
         {
             var loggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Debug)
@@ -53,7 +54,6 @@ namespace Shopping.Infrastructure.Tests
             await WriteEventsToStream();
 
             await eventStream.StartAsync();
-
 
             await Task.Delay(200);
         }

@@ -13,10 +13,10 @@ namespace DomainLib.Projections.Sql
     {
         private static readonly ILogger<SqlContext> Log = Logger.CreateFor<SqlContext>();
         private readonly ISqlDialect _sqlDialect;
-        private readonly HashSet<ISqlProjection> _projections = new HashSet<ISqlProjection>();
+        private readonly HashSet<ISqlProjection> _projections = new();
         private readonly SqlContextSettings _settings;
 
-        private readonly StringBuilder _schemaStringBuilder = new StringBuilder();
+        private readonly StringBuilder _schemaStringBuilder = new();
         private IDbTransaction _activeTransaction;
         private bool _isProcessingLiveEvents;
 

@@ -97,14 +97,16 @@ namespace DomainLib.Projections.Sql
 
             if (_executesUpsert)
             {
-                commandTextBuilder.Append(_sqlDialect.BuildUpsertCommandText(_sqlProjection, _sqlProjection.Columns));
+                commandTextBuilder.Append(_sqlDialect.BuildUpsertCommandText(_sqlProjection.TableName,
+                                                                             _sqlProjection.Columns));
                 commandTextBuilder.Append(" ");
             }
 
             if (_executesDelete)
             {
                 ValidateDeleteCommand();
-                commandTextBuilder.Append(_sqlDialect.BuildDeleteCommandText(_sqlProjection, _sqlProjection.Columns));
+                commandTextBuilder.Append(_sqlDialect.BuildDeleteCommandText(_sqlProjection.TableName,
+                                                                             _sqlProjection.Columns));
                 commandTextBuilder.Append(" ");
             }
 
@@ -173,11 +175,11 @@ namespace DomainLib.Projections.Sql
 
             if (!primaryKeyColumns.All(pk => parameterNames.Contains(pk)))
             {
-                throw new InvalidOperationException($"All primary key columns must be present in event. " +
+                throw new InvalidOperationException("All primary key columns must be present in event. " +
                                                     $"{typeof(TEvent).FullName} cannot be used to delete " +
                                                     $"from table {_sqlProjection.TableName} as it can't identify " +
-                                                    $"a single row. If you wish to delete multiple rows from this " +
-                                                    $"event, you will need to use a custom command instead");
+                                                    "a single row. If you wish to delete multiple rows from this " +
+                                                    "event, you will need to use a custom command instead");
             }
 
         }

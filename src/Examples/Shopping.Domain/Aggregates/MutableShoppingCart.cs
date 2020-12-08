@@ -19,7 +19,7 @@ namespace Shopping.Domain.Aggregates
 
             if (isNew)
             {
-                yield return new ShoppingCartCreated(command.Id);
+                yield return new ShoppingCartCreated(command.CartId);
             }
 
             yield return new ItemAddedToShoppingCart(command.Id, command.CartId, command.Item);

@@ -1,8 +1,8 @@
 ﻿namespace DomainLib.Projections.Sql
 {
-    public sealed class SqlContextSettings
+    public record SqlContextSettings
     {
-        public static SqlContextSettings Default { get; } = new SqlContextSettings(true, true);
+        public static SqlContextSettings Default { get; } = new(true, true);
 
         public SqlContextSettings(bool useTransactionBeforeCaughtUp, bool handleLiveEventsInTransaction)
         {
@@ -10,7 +10,7 @@
             HandleLiveEventsInTransaction = handleLiveEventsInTransaction;
         }
 
-        public bool UseTransactionBeforeCaughtUp { get; }
-        public bool HandleLiveEventsInTransaction { get; }
+        public bool UseTransactionBeforeCaughtUp { get; init; }
+        public bool HandleLiveEventsInTransaction { get; init; }
     }
 }

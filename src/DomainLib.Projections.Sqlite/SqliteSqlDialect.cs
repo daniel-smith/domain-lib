@@ -34,13 +34,13 @@ CREATE TABLE IF NOT EXISTS {tableName} (
             return createTableSql;
         }
 
-        public string BuildUpsertCommandText(ISqlProjection projection, SqlColumnDefinitions eventPropertyMap)
+        public string BuildUpsertCommandText(string tableName, SqlColumnDefinitions eventPropertyMap)
         {
             var columns = string.Join(SqlValueSeparator, eventPropertyMap.Select(x => x.Value.Name));
             var parameterNames = string.Join(SqlValueSeparator, eventPropertyMap.Select(x => $"@{x.Value.Name}"));
 
             var commandText = $@"
-INSERT OR REPLACE INTO {projection.TableName} (
+INSERT OR REPLACE INTO {tableName} (
 {columns}
 )
 VALUES (
@@ -50,7 +50,7 @@ VALUES (
             return commandText;
         }
 
-        public string BuildDeleteCommandText(ISqlProjection projection, SqlColumnDefinitions eventPropertyMap)
+        public string BuildDeleteCommandText(string tableName, SqlColumnDefinitions eventPropertyMap)
         {
             var primaryKeyColumns = eventPropertyMap.Where(x => x.Value.IsInPrimaryKey)
                                                     .Select(x => $"{x.Value.Name} = @{x.Value.Name}");
@@ -58,7 +58,7 @@ VALUES (
             var primaryKeysSql = string.Join(SqlPredicateSeparator, primaryKeyColumns);
 
             var commandText = $@"
-DELETE FROM {projection.TableName}
+DELETE FROM {tableName}
 WHERE
 {primaryKeysSql}
 ;

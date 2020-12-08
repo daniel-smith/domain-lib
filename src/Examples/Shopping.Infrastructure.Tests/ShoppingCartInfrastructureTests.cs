@@ -65,8 +65,8 @@ namespace Shopping.Infrastructure.Tests
             Assert.That(loadedVersion, Is.EqualTo(2));
             Assert.That(loadedState.Id, Is.EqualTo(shoppingCartId));
             Assert.That(loadedState.Items, Has.Count.EqualTo(2));
-            Assert.That(loadedState.Items[0], Is.EqualTo("First Item"));
-            Assert.That(loadedState.Items[1], Is.EqualTo("Second Item"));
+            Assert.That(loadedState.Items[0].Name, Is.EqualTo("First Item"));
+            Assert.That(loadedState.Items[1].Name, Is.EqualTo("Second Item"));
         }
     }
 }

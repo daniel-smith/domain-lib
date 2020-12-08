@@ -39,11 +39,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DomainLib.Projections.Sql",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DomainLib.Projections.Sqlite", "DomainLib.Projections.Sqlite\DomainLib.Projections.Sqlite.csproj", "{374C051D-512B-4C75-A80F-E79847C2CB96}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomainLib.Common", "DomainLib.Common\DomainLib.Common.csproj", "{4C8BCCC8-CF26-47A4-B1C1-4A835F2DD774}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DomainLib.Common", "DomainLib.Common\DomainLib.Common.csproj", "{4C8BCCC8-CF26-47A4-B1C1-4A835F2DD774}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomainLib.Projections.Tests", "DomainLib.Projections.Tests\DomainLib.Projections.Tests.csproj", "{14A5C5DC-92CA-4158-BCC2-4D00DF8A35F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DomainLib.Projections.Sql.Tests", "DomainLib.Projections.Tests\DomainLib.Projections.Sql.Tests.csproj", "{14A5C5DC-92CA-4158-BCC2-4D00DF8A35F9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomainLib.Projections.Sqlite.Tests", "DomainLib.Projections.Sqlite.Tests\DomainLib.Projections.Sqlite.Tests.csproj", "{04EEB093-7525-4E8E-941F-D144B6F71CC2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DomainLib.Projections.Sqlite.Tests", "DomainLib.Projections.Sqlite.Tests\DomainLib.Projections.Sqlite.Tests.csproj", "{04EEB093-7525-4E8E-941F-D144B6F71CC2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projections", "Projections", "{EB200888-007B-45F9-B48D-FEBF2BAF6F5F}"
 EndProject

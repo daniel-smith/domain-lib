@@ -7,7 +7,7 @@ namespace DomainLib.Projections.Sql
     {
         private string _name;
         private DbType _dataType = DbType.String;
-        private bool _isInPrimaryKey = false;
+        private bool _isInPrimaryKey;
         private bool _isNullable = true;
 
         public SqlColumnDefinitionBuilder Name(string name)
