@@ -5,7 +5,11 @@ namespace DomainLib.Projections.Sql
 {
     public sealed class SqlColumnDefinition
     {
-        internal SqlColumnDefinition(string name, DbType dataType, bool isInPrimaryKey, bool isNullable)
+        internal SqlColumnDefinition(string name,
+                                     DbType dataType,
+                                     bool isInPrimaryKey,
+                                     bool isNullable,
+                                     string @default)
         {
             if (isInPrimaryKey && isNullable)
             {
@@ -16,11 +20,13 @@ namespace DomainLib.Projections.Sql
             DataType = dataType;
             IsInPrimaryKey = isInPrimaryKey;
             IsNullable = isNullable;
+            Default = @default;
         }
 
         public string Name { get; }
         public DbType DataType { get; }
         public bool IsInPrimaryKey { get; }
         public bool IsNullable { get; }
+        public string Default { get; }
     }
 }

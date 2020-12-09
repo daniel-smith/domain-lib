@@ -23,8 +23,8 @@ namespace DomainLib.Projections.Sqlite.Tests
 
                 Assert.That(createTableScript, Is.EqualTo(@"
 CREATE TABLE IF NOT EXISTS Table1 (
-Col1 TEXT NULL , 
-Col2 TEXT NULL 
+Col1 TEXT NULL,
+Col2 TEXT NULL
 );
 "));
             }
@@ -43,8 +43,8 @@ Col2 TEXT NULL
 
                 Assert.That(createTableScript, Is.EqualTo(@"
 CREATE TABLE IF NOT EXISTS Table1 (
-Col1 TEXT NOT NULL PRIMARY KEY, 
-Col2 TEXT NULL 
+Col1 TEXT NOT NULL PRIMARY KEY,
+Col2 TEXT NULL
 );
 "));
             }
@@ -63,8 +63,8 @@ Col2 TEXT NULL
 
                 Assert.That(createTableScript, Is.EqualTo(@"
 CREATE TABLE IF NOT EXISTS Table1 (
-Col1 TEXT NOT NULL , 
-Col2 TEXT NULL 
+Col1 TEXT NOT NULL,
+Col2 TEXT NULL
 );
 "));
             }
@@ -108,7 +108,7 @@ Col2 TEXT NULL
 
                 Assert.That(createTableScript, Is.EqualTo($@"
 CREATE TABLE IF NOT EXISTS Table1 (
-Col1 {columnType} NULL 
+Col1 {columnType} NULL
 );
 "));
             }
@@ -151,11 +151,11 @@ VALUES (
 
                 Assert.That(upsertScript, Is.EqualTo(@"
 INSERT OR REPLACE INTO Table1 (
-Col1, 
+Col1,
 Col2
 )
 VALUES (
-@Col1, 
+@Col1,
 @Col2
 );
 "));

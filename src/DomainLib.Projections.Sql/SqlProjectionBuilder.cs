@@ -94,11 +94,15 @@ namespace DomainLib.Projections.Sql
             }
 
             var commandTextBuilder = new StringBuilder();
+            var columnsInGeneratedSql =
+                new SqlColumnDefinitions(_sqlProjection.Columns.Where(x => _parameterBindingMap.GetParameterNames()
+                                                                          .Contains(x.Key)));
+
 
             if (_executesUpsert)
             {
                 commandTextBuilder.Append(_sqlDialect.BuildUpsertCommandText(_sqlProjection.TableName,
-                                                                             _sqlProjection.Columns));
+                                                                             columnsInGeneratedSql));
                 commandTextBuilder.Append(" ");
             }
 
@@ -106,7 +110,7 @@ namespace DomainLib.Projections.Sql
             {
                 ValidateDeleteCommand();
                 commandTextBuilder.Append(_sqlDialect.BuildDeleteCommandText(_sqlProjection.TableName,
-                                                                             _sqlProjection.Columns));
+                                                                             columnsInGeneratedSql));
                 commandTextBuilder.Append(" ");
             }
 
@@ -170,7 +174,7 @@ namespace DomainLib.Projections.Sql
         private void ValidateDeleteCommand()
         {
             var primaryKeyColumns = _sqlProjection.Columns.Where(c => c.Value.IsInPrimaryKey)
-                                                  .Select(kvp => kvp.Value.Name);
+                                                  .Select(kvp => kvp.Key);
             var parameterNames = _parameterBindingMap.GetParameterNames();
 
             if (!primaryKeyColumns.All(pk => parameterNames.Contains(pk)))

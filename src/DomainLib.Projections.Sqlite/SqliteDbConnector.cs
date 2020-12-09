@@ -23,9 +23,12 @@ namespace DomainLib.Projections.Sqlite
             _connectionString = connectionString;
         }
 
+        public IDbConnection Connection { get; private set; }
+        
         public IDbConnection CreateConnection()
         {
-            return new SQLiteConnection(_connectionString);
+            Connection = new SQLiteConnection(_connectionString);
+            return Connection;
         }
 
         public void BindParameters<TEvent>(IDbCommand command,
@@ -37,9 +40,20 @@ namespace DomainLib.Projections.Sqlite
             {
                 foreach (var (name, value) in parameterBindingMap.GetParameterNamesAndValues(@event))
                 {
-                    var sqlColumnDefinition = columnDefinitions[name];
-                    var parameter = new SQLiteParameter($"@{sqlColumnDefinition.Name}", sqlColumnDefinition.DataType)
-                        {Value = value};
+                    SQLiteParameter parameter;
+                    if (columnDefinitions.TryGetValue(name, out var sqlColumnDefinition))
+                    {
+                        parameter = new SQLiteParameter($"@{sqlColumnDefinition.Name}", sqlColumnDefinition.DataType)
+                            { Value = value };
+                    }
+                    else 
+                    {
+                        // Parameter may not be in column definitions if it is custom sql.
+                        // In this case, we don't bind the DbTyp for the parameter
+                        parameter = new SQLiteParameter($"@{name}")
+                            { Value = value };
+                    }
+     
                     command.Parameters.Add(parameter);
                 }
             }

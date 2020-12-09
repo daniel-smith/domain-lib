@@ -19,7 +19,17 @@ namespace DomainLib.Projections.Sqlite
             {
                 var nullableText = column.IsNullable ? "NULL" : "NOT NULL";
                 var primaryKeyText = column.IsInPrimaryKey ? "PRIMARY KEY" : string.Empty;
-                var columnString = string.Join(" ", column.Name, GetDataTypeName(column.DataType), nullableText, primaryKeyText);
+                var defaultText = string.IsNullOrWhiteSpace(column.Default)
+                                      ? string.Empty
+                                      : $"DEFAULT {column.Default}";
+
+                var columnString = string.Join(" ",
+                                               column.Name,
+                                               GetDataTypeName(column.DataType),
+                                               nullableText,
+                                               primaryKeyText,
+                                               defaultText);
+
                 columnStrings.Add(columnString);
             }
 
@@ -31,7 +41,7 @@ CREATE TABLE IF NOT EXISTS {tableName} (
 {columnsText}
 );
 ";
-            return createTableSql;
+            return RemoveUnnecessarySpaces(createTableSql);
         }
 
         public string BuildUpsertCommandText(string tableName, SqlColumnDefinitions eventPropertyMap)
@@ -47,7 +57,7 @@ VALUES (
 {parameterNames}
 );
 ";
-            return commandText;
+            return RemoveUnnecessarySpaces(commandText);
         }
 
         public string BuildDeleteCommandText(string tableName, SqlColumnDefinitions eventPropertyMap)
@@ -63,7 +73,15 @@ WHERE
 {primaryKeysSql}
 ;
 ";
-            return commandText;
+            return RemoveUnnecessarySpaces(commandText);
+        }
+
+        private string RemoveUnnecessarySpaces(string input)
+        {
+            return input.Replace("  ", " ")
+                        .Replace(" , ", ", ")
+                        .Replace($" {Environment.NewLine}", Environment.NewLine);
+
         }
 
         private static string GetDataTypeName(DbType dbType)

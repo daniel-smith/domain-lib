@@ -1,8 +1,7 @@
 ﻿using System.Data;
-using DomainLib.Projections.Sql.Tests.Fakes;
 using DomainLib.Projections.Sqlite;
 
-namespace DomainLib.Projections.Sql.Tests
+namespace DomainLib.Projections.Sql.Tests.Fakes
 {
     public class FakeSqlProjection : ISqlProjection
     {

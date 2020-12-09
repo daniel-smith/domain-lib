@@ -7,7 +7,7 @@ namespace DomainLib.Projections
     public sealed class EventContextMap
     {
         private readonly HashSet<IContext> _allContexts = new();
-        private readonly Dictionary<Type, List<IContext>> _eventContextMap = new();
+        private readonly Dictionary<Type, HashSet<IContext>> _eventContextMap = new();
         // ReSharper disable once CollectionNeverUpdated.Local
         private static readonly Collection<IContext> EmptyContextCollection = new();
 
@@ -23,7 +23,7 @@ namespace DomainLib.Projections
             }
             else
             {
-                var contextsList = new List<IContext> {context};
+                var contextsList = new HashSet<IContext>() {context};
                 _eventContextMap.Add(typeof(TEvent), contextsList);
             }
         }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using DomainLib.Projections.Sql.Tests.Fakes;
 using NUnit.Framework;
 
 namespace DomainLib.Projections.Sql.Tests
