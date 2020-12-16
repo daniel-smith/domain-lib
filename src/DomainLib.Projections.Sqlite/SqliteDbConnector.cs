@@ -11,8 +11,6 @@ namespace DomainLib.Projections.Sqlite
     {
         public static readonly ILogger<SqliteDbConnector> Log = Logger.CreateFor<SqliteDbConnector>();
 
-        private readonly string _connectionString;
-
         public SqliteDbConnector(string connectionString)
         {
             if (string.IsNullOrWhiteSpace(connectionString))
@@ -20,17 +18,11 @@ namespace DomainLib.Projections.Sqlite
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(connectionString));
             }
 
-            _connectionString = connectionString;
+            Connection = new SQLiteConnection(connectionString);
         }
 
-        public IDbConnection Connection { get; private set; }
+        public IDbConnection Connection { get; }
         
-        public IDbConnection CreateConnection()
-        {
-            Connection = new SQLiteConnection(_connectionString);
-            return Connection;
-        }
-
         public void BindParameters<TEvent>(IDbCommand command,
                                            TEvent @event,
                                            SqlColumnDefinitions columnDefinitions,

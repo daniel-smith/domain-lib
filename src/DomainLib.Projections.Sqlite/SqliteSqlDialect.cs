@@ -11,6 +11,8 @@ namespace DomainLib.Projections.Sqlite
         private static readonly string SqlValueSeparator = $", {Environment.NewLine}";
         private static readonly string SqlPredicateSeparator = $" AND{Environment.NewLine}";
 
+        public string DialectKey { get; } = "Sqlite3";
+
         public string BuildCreateTableSql(string tableName, IEnumerable<SqlColumnDefinition> columnDefinitions)
         {
             var columnStrings = new List<string>();

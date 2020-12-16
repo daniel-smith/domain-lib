@@ -25,7 +25,7 @@ namespace DomainLib.Projections.Sql
             if (connector == null) throw new ArgumentNullException(nameof(connector));
             _sqlDialect = sqlDialect ?? throw new ArgumentNullException(nameof(sqlDialect));
             _settings = connector.ContextSettings;
-            Connection = connector.CreateConnection();
+            Connection = connector.Connection;
         }
 
         public IDbConnection Connection { get; }

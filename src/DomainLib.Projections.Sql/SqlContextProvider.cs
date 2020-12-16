@@ -15,15 +15,13 @@ namespace DomainLib.Projections.Sql
 
         private readonly struct SqlContextKey : IEquatable<SqlContextKey>
         {
-            private readonly Type _dbConnectorType;
-            private readonly Type _sqlDialectType;
+            private readonly string _sqlDialectKey;
 
             public SqlContextKey(IDbConnector dbConnector, ISqlDialect sqlDialect)
             {
                 DbConnector = dbConnector;
                 SqlDialect = sqlDialect;
-                _dbConnectorType = dbConnector.GetType();
-                _sqlDialectType = sqlDialect.GetType();
+                _sqlDialectKey = sqlDialect.DialectKey;
             }
 
             public IDbConnector DbConnector { get; }
@@ -31,7 +29,7 @@ namespace DomainLib.Projections.Sql
 
             public bool Equals(SqlContextKey other)
             {
-                return _dbConnectorType == other._dbConnectorType && _sqlDialectType == other._sqlDialectType;
+                return _sqlDialectKey == other._sqlDialectKey && Equals(DbConnector, other.DbConnector);
             }
 
             public override bool Equals(object obj)
@@ -41,7 +39,7 @@ namespace DomainLib.Projections.Sql
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(_dbConnectorType, _sqlDialectType);
+                return HashCode.Combine(_sqlDialectKey, DbConnector);
             }
 
             public static bool operator ==(SqlContextKey left, SqlContextKey right)

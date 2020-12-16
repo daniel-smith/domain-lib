@@ -5,7 +5,7 @@ namespace DomainLib.Projections.Sql
     public interface IDbConnector
     {
         SqlContextSettings ContextSettings => SqlContextSettings.Default;
-        IDbConnection CreateConnection();
+        IDbConnection Connection { get; }
         void BindParameters<TEvent>(IDbCommand command,
                                     TEvent @event,
                                     SqlColumnDefinitions columnDefinitions,

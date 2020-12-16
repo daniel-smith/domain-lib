@@ -57,6 +57,7 @@ namespace DomainLib.Projections.EventStore
         private void OnSubscriptionDropped(EventStoreCatchUpSubscription subscription, SubscriptionDropReason reason, Exception exception)
         {
             // TODO: Need to handle this
+            // https://github.com/daniel-smith/domain-lib/issues/29
         }
     }
 }
