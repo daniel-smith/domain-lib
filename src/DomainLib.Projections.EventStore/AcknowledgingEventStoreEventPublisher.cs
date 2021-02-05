@@ -14,24 +14,21 @@ namespace DomainLib.Projections.EventStore
         private Func<EventNotification<byte[]>, Task> _onEvent;
         private readonly EventStorePersistentConnectionDescriptor _persistentConnectionDescriptor;
         private EventStorePersistentSubscriptionBase _subscription;
+        private EventStoreDroppedSubscriptionHandler _subscriptionDroppedHandler;
 
         public AcknowledgingEventStoreEventPublisher(IEventStoreConnection connection, 
                                                      EventStorePersistentConnectionDescriptor persistentConnectionDescriptor)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _persistentConnectionDescriptor = persistentConnectionDescriptor;
+            _subscriptionDroppedHandler = new EventStoreDroppedSubscriptionHandler(Stop, ReSubscribeAfterDrop);
+
         }
 
         public async Task StartAsync(Func<EventNotification<byte[]>, Task> onEvent)
         {
             _onEvent = onEvent ?? throw new ArgumentNullException(nameof(onEvent));
-            _subscription = await _connection.ConnectToPersistentSubscriptionAsync(_persistentConnectionDescriptor.Stream,
-                                                                                   _persistentConnectionDescriptor.GroupName,
-                                                                                   HandleEvent,
-                                                                                   OnSubscriptionDropped,
-                                                                                   _persistentConnectionDescriptor.UserCredentials,
-                                                                                   _persistentConnectionDescriptor.BufferSize,
-                                                                                   false);
+            await SubscribeToPersistentSubscription();
         }
 
         public void Stop()
@@ -50,6 +47,18 @@ namespace DomainLib.Projections.EventStore
             // It might be better to return straight away and then ack/nack as and when we finish processing
             // This needs some more investigation
             await TryHandlingEvent(subscription, resolvedEvent, 0);
+        }
+
+        private async Task SubscribeToPersistentSubscription()
+        {
+            _subscription = await _connection.ConnectToPersistentSubscriptionAsync(_persistentConnectionDescriptor.Stream,
+                                _persistentConnectionDescriptor.GroupName,
+                                HandleEvent,
+                                OnSubscriptionDropped,
+                                _persistentConnectionDescriptor
+                                    .UserCredentials,
+                                _persistentConnectionDescriptor.BufferSize,
+                                false);
         }
 
         private async Task TryHandlingEvent(EventStorePersistentSubscriptionBase subscription, ResolvedEvent resolvedEvent, int retryNumber)
@@ -126,10 +135,16 @@ namespace DomainLib.Projections.EventStore
             }
         }
 
-        private void OnSubscriptionDropped(EventStorePersistentSubscriptionBase arg1, SubscriptionDropReason arg2, Exception arg3)
+        private void OnSubscriptionDropped(EventStorePersistentSubscriptionBase subscription,
+                                           SubscriptionDropReason reason,
+                                           Exception exception)
         {
-            // TODO: Need to handle this
-            // https://github.com/daniel-smith/domain-lib/issues/29
+            _subscriptionDroppedHandler.HandleDroppedSubscription(reason, exception);
+        }
+
+        private async Task ReSubscribeAfterDrop()
+        {
+            await SubscribeToPersistentSubscription();
         }
     }
 }
