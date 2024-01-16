@@ -1,5 +1,9 @@
 # domain-lib
 
+:warning: This repository is now archived. Please see https://github.com/DomainBlocks/domain-blocks, which is where this project has been moved to.
+
+---
+
 This library is intented to be a set of patterns and tools for use in projects that aim to apply concepts from DDD and event sourcing.
 
 **The goals of this library are to:**
